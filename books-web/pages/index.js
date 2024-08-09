@@ -1,4 +1,8 @@
 import { Bookshelf } from '../components/Bookshelf';
+import dynamic from 'next/dynamic';
+
+const ImageViewer = dynamic(() => import('../components/BookshelfView'), { ssr: false });
+
 
 const Home = () => {
   const books = [
@@ -19,6 +23,7 @@ const Home = () => {
   return (
     <div>
       <Bookshelf books={books} />
+      <ImageViewer />
     </div>
   );
 }

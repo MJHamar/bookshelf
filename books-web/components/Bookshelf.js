@@ -179,7 +179,7 @@ export function Bookshelf({ books }) {
         style={{
           position: "absolute",
           inset: 0,
-          visibility: "hidden",
+          visibility: "auto",
         }}
       >
         <defs>
@@ -234,10 +234,10 @@ export function Bookshelf({ books }) {
                 onClick={() => {
                   if (index === bookIndex) {
                     setBookIndex(-1);
-                    router.push('/books');
+                    // router.push('/books');
                   } else {
                     setBookIndex(index);
-                    router.push(book.slug);
+                    // router.push(book.slug);
                   }
                 }}
                 style={{
