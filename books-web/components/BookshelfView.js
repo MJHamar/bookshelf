@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bookshelf } from '../components/Bookshelf';
+import { Shelf } from '../components/Bookshelf';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
 const ImageViewer = () => {
@@ -32,8 +32,8 @@ const ImageViewer = () => {
                         style={{
                             width: '2048px', height: 'auto', cursor: 'grab', position: 'relative', top: '0px', left: '0px', zIndex: 1 }}
                     />
-                    <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 100 }}>
-                        <Bookshelf books={books} />
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 100, height: '10px' }}>
+                        <Shelf books={books} />
                     </div>
                 </TransformComponent>
 

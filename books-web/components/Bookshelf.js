@@ -17,7 +17,7 @@ import { useRouter } from "next/router";
 import PropTypes from 'prop-types';
 
 
-export function Bookshelf({ books }) {
+export function Shelf({ books }) {
   const router = useRouter();
   const [bookIndex, setBookIndex] = React.useState(-1);
   const [scroll, setScroll] = React.useState(-200);
@@ -34,8 +34,8 @@ export function Bookshelf({ books }) {
     sm: { start: "mouseenter", stop: "mouseleave" },
   });
 
-  const width = 41.5;
-  const height = 220;
+  const width = 21.5;
+  const height = 120;
 
   const spineWidth = width + 'px';
   const coverWidth = width * 4 + 'px';
@@ -380,7 +380,7 @@ export function Bookshelf({ books }) {
   );
 }
 
-Bookshelf.propTypes = {
+Shelf.propTypes = {
   books: PropTypes.arrayOf(
     PropTypes.shape({
       title: PropTypes.string.isRequired,
