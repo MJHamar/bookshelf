@@ -1,11 +1,12 @@
-use std::ptr::null;
-
+// Module for handling bookshelf related requests
 use log::{debug,warn,info,error};
 use actix_web::Responder;
 use actix_web::{web, HttpResponse};
 use redis::{AsyncCommands, RedisError};
 use crate::db_conn::{Shelf, Book, BookCover, BookProgress, DefaultResponse,
-                    SHELF_KEY, BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY};
+                    DecorationSlot, Decoration,
+                    SHELF_KEY, BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
+                    DECORATION_SLOT_KEY, DECORATION_KEY};
 use uuid::Uuid;
 
 pub async fn get_shelves(conn: web::Data<redis::Client>) -> impl Responder {
@@ -104,6 +105,33 @@ pub async fn get_book_progress(book_ids: web::Json<Vec<String>>, conn: web::Data
     HttpResponse::Ok().json(book_progress_v)
 }
 
+pub async fn get_decoration_slots(conn: web::Data<redis::Client>) -> impl Responder {
+    let mut decoration_slots: Vec<DecorationSlot> = Vec::new();
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+
+    let decoration_slot_strs: Vec<String> = con.hvals(&DECORATION_SLOT_KEY).await.expect("Failed to read decoration slots");
+
+    for decoration_slot_str in decoration_slot_strs {
+        let decoration_slot: DecorationSlot = serde_json::from_str(&decoration_slot_str).expect("Failed to parse decoration slot");
+        decoration_slots.push(decoration_slot);
+    }
+
+    HttpResponse::Ok().json(decoration_slots)
+}
+
+pub async fn get_decorations(dec_ids: web::Json<Vec<String>>, conn: web::Data<redis::Client>) -> impl Responder {
+    let mut decorations: Vec<Decoration> = Vec::new();
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+
+    for dec_id in dec_ids.iter() {
+        let decoration_str: String = con.hget(&DECORATION_KEY, dec_id).await.expect("Failed to read decoration");
+        let decoration: Decoration = serde_json::from_str(&decoration_str).expect("Failed to parse decoration");
+        decorations.push(decoration);
+    }
+
+    HttpResponse::Ok().json(decorations)
+}
+
 pub async fn set_book(conn: web::Data<redis::Client>, book: web::Json<Book>) -> impl Responder {
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     // check if book already exists
@@ -153,6 +181,29 @@ pub async fn set_book_progress(conn: web::Data<redis::Client>, book_progress: we
     let book_progress_str: String = serde_json::to_string(&book_progress).expect("Failed to serialize book progress");
     
     con.hset(&BOOK_PROGRESS_KEY, book_id, &book_progress_str as &str).await.expect("Failed to set book progress");
+
+    HttpResponse::Ok().json(DefaultResponse::default())
+}
+
+// NOT USED
+pub async fn set_decoration_slot(conn: web::Data<redis::Client>, decoration_slot: web::Json<DecorationSlot>) -> impl Responder {
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let decoration_slot = decoration_slot.into_inner();
+    let slot_id = decoration_slot.id.to_string();
+    let decoration_slot_str = serde_json::to_string(&decoration_slot).expect("Failed to serialize decoration slot");
+
+    con.hset(&DECORATION_SLOT_KEY, slot_id, decoration_slot_str).await.expect("Failed to set decoration slot");
+
+    HttpResponse::Ok().json(DefaultResponse::default())
+}
+
+pub async fn set_decoration(conn: web::Data<redis::Client>, decoration: web::Json<Decoration>) -> impl Responder {
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let decoration = decoration.into_inner();
+    let dec_id = decoration.id.to_string();
+    let decoration_str = serde_json::to_string(&decoration).expect("Failed to serialize decoration");
+
+    con.hset(&DECORATION_KEY, dec_id, decoration_str).await.expect("Failed to set decoration");
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }

@@ -1,4 +1,3 @@
-use std::fmt::Binary;
 
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
@@ -10,6 +9,8 @@ pub const SHELF_KEY: &str = "shelves";
 pub const BOOK_KEY: &str = "books";
 pub const BOOK_COVER_KEY: &str = "book_covers";
 pub const BOOK_PROGRESS_KEY: &str = "book_progress";
+pub const DECORATION_SLOT_KEY: &str = "decoration_slots";
+pub const DECORATION_KEY: &str = "decorations";
 
 // a dictionary with a single key-value pair: "status": "ok"
 #[derive(Serialize, Deserialize)]
@@ -58,6 +59,23 @@ pub struct BookProgress {
     pub started_dt: DateTime<Utc>,
     pub finished_dt: DateTime<Utc>,
     pub last_read_dt: DateTime<Utc>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DecorationSlot {
+    pub id: Number,
+    pub x_pos: Number,
+    pub y_pos: Number,
+    pub height: Number,
+    pub width: Number,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Decoration {
+    pub id: Number,
+    pub slot_id: Number,
+    pub decoration_type: String, 
+    pub decoration_fname: String,
 }
 
 pub async fn test_redis(params: String) -> redis::RedisResult<()> {
