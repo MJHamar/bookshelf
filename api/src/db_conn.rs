@@ -35,11 +35,6 @@ pub struct Layout {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct CurrentLayout {
-    pub layout_id: String,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct Shelf {
     pub id: Number,
     pub x_pos: Number,
@@ -51,7 +46,6 @@ pub struct Shelf {
 #[derive(Serialize, Deserialize)]
 pub struct Book {
     pub id: String,
-    pub shelf_id: Number, // -1 if not on a shelf
     pub title: String,
     pub author: String,
     pub isbn: String,
@@ -61,6 +55,7 @@ pub struct Book {
 #[derive(Serialize, Deserialize)]
 pub struct BookCover {
     pub book_id: String,
+    pub shelf_id: Number, // -1 if not on a shelf
     pub cover_fname: String,
     pub spine_fname: String,
     pub book_height: Number,

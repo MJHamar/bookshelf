@@ -15,7 +15,7 @@ async fn _get_layout_by_id(layout_id: &str, conn: &mut redis::aio::MultiplexedCo
     let layout_str: String = match conn.hget(&LAYOUT_KEY, layout_id).await {
         Ok(layout_str) => layout_str,
         Err(_) => {
-            warn!("{} key not found in Redis", LAYOUT_KEY);
+            warn!("{}:{} key not found in Redis", LAYOUT_KEY, layout_id);
             return None
         }
     };
@@ -55,7 +55,7 @@ pub async fn get_current_layout(conn: web::Data<redis::Client>) -> impl Responde
             return HttpResponse::InternalServerError().json(DefaultResponse::default())
         }
     };
-    let layout_id: String = match con.hget(&CURRENT_LAYOUT_KEY, "layout_id").await {
+    let layout_id: String = match con.get(&CURRENT_LAYOUT_KEY).await {
         Ok(layout_id) => layout_id,
         Err(_) => {
             warn!("{} key not found in Redis", CURRENT_LAYOUT_KEY);
@@ -211,7 +211,6 @@ pub async fn set_book(conn: web::Data<redis::Client>, book: web::Json<Book>) -> 
             // create new book
             let new_book = Book {
                 id: Uuid::new_v4().to_string(),
-                shelf_id: book.shelf_id,
                 title: book.title,
                 author: book.author,
                 isbn: book.isbn,

@@ -36,7 +36,7 @@ pub async fn serve() -> std::io::Result<()> {
             .app_data(Data::new(redis.clone()))
             .route("/", web::get().to(index))
             .route("/books/layout/{layout_id}", web::get().to(bookshelf::get_layout))
-            .route("/books/layout/current", web::get().to(bookshelf::get_current_layout))
+            .route("/books/current_layout", web::get().to(bookshelf::get_current_layout))
             .route("/books/shelves/{layout_id}", web::get().to(bookshelf::get_shelves))
             .route("/books", web::get().to(bookshelf::get_books))
             .route("/books/covers", web::get().to(bookshelf::get_book_covers))
