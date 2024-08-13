@@ -1,0 +1,130 @@
+I am building a bookshelf app in React/next.js that places a number of books on "shelves" of a virtual bookshelf. The bookshelf itself is just a background image (which, in a later version, I would like to generate using a diffusion model; unimportant for now) and the shelves are rectangles with pre-set coordinates and size. Books are to be assigned to these shelves and displayed as a horizontal stack or something similar. The app must keep track of the number of books assigned to a shelf and in case there is no more space left for that book, it should instead be assigned to the next shelf. The order of the shelves is fixed and can be retrieved from the database (id attribute). In the following, I will copy-paste the domain model of the API, which I use as an intermediate layer between the database and the front-end.
+
+
+#[derive(Serialize, Deserialize)]
+pub struct Layout {
+    pub id: String,
+    pub layout_fname: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CurrentLayout {
+    pub layout_id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Shelf {
+    pub id: Number,
+    pub layout_id: String,
+    pub x_pos: Number,
+    pub y_pos: Number,
+    pub height: Number,
+    pub width: Number,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Book {
+    pub id: String,
+    pub shelf_id: Number, // -1 if not on a shelf
+    pub title: String,
+    pub author: String,
+    pub isbn: String,
+    pub description: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BookCover {
+    pub id: String,
+    pub book_id: String,
+    pub cover_fname: String,
+    pub spine_fname: String,
+    pub book_height: Number,
+    pub book_width: Number,
+    pub spine_width: Number,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BookProgress {
+    pub book_id: String,
+    pub progress: Number, // 0: not started, 1: started, 2: finished
+    pub started_dt: DateTime<Utc>,
+    pub finished_dt: DateTime<Utc>,
+    pub last_read_dt: DateTime<Utc>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DecorationSlot {
+    pub id: Number,
+    pub x_pos: Number,
+    pub y_pos: Number,
+    pub height: Number,
+    pub width: Number,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Decoration {
+    pub id: Number,
+    pub layout_id: String,
+    pub slot_id: Number,
+    pub decoration_type: String, 
+    pub decoration_fname: String,
+}
+
+The objects above are used as follows:
+Layout: contains a unique ID and a path to an image that shows the structure of the bookshelf.
+API paths: 
+- GET -- /books/layout/{layout_id}
+
+CurrentLayout: reference to a single Layout instance, which is currently used.
+API paths:
+- retrieve: GET -- /books/layout/current. -- returns the desired Layout instance.
+
+Shelf: describe a single shelf in the bookshelf; its position and size. The id attribute defines a total ordering between the shelf instances. 
+API paths:
+- retrieve: GET -- /books/shelves.
+
+Book: describe a single book and its pre-defined attributes, such as author, title etc. It has a unique UUID and is assigned to a Shelf through a foreign key. The React app should take care of updating this foreign key whenever (i) the book no longer fits (e.g. another book was placed to the right-hand side of this book and there is no more space on the shelf). In this case, the next available shelf should be selected. (ii) the user moves this book to another shelf.
+API paths:
+retrieve: GET -- /books -- no payload
+create/modify: POST -- /books -- payload is a JSON object with the same fields as the Book struct (id field is optional)
+
+BookCover: paths to images describing the spine (visible when the book is on the shelf) and the cover image (visible when the user clicks on the book, details later). id is a unique UUID and book_id is a foreign key connecting this entity to a Book instance. The book_height and book_width attributes describe the size of the cover image, while spine_width is the width of the spine image.
+API paths: 
+- retrieve: GET -- /books/covers -- payload: JSON array of book_ids
+- create/modify: POST /books/covers -- payload: JSON object with the same fields as the BookCover struct.
+
+BookProgress: user-related information about a specific book. book_id is unique and connects BookProgress instances to Book instances on a 1-to-1 mapping.
+API paths: 
+- retrieve: GET -- /books/progress -- payload: JSON array of book_ids
+- create/modify: POST /books/progress -- payload: JSON object with the same fields as the BookProgress struct.
+
+DecorationSlot: similar to Shelf instances, but is designated to place a decorative element on the page. The object describes its coordinates and has a unique ID. dec_id is the unique identifier of a Decoration object, relating the DecorationSlot to a single Decoration instance.
+API paths:
+- retrieve: GET -- /books/decoration_slots -- no payload
+- modify: POST -- /books/decoration_slots -- payload is a JSON object with the same fields as the DecorationSlot struct. 
+
+Decoration: a decorative item (an image) to be placed inside a DecorationSlot. id is unique and the object describes the path to a decorative element that the app should load.
+API paths:
+- retrieve: GET -- /books/decoration -- payload is a JSON array or dec_ids.
+- create/modify: POST /books/decoration -- payload is a JSON object with the same fields as the Decoration struct.
+
+When the user navigates to this page, the following steps should be performed:
+1. Load and the current Layout, which is an image located at the path described by the Location struct returned by the API. Display it.
+2. Obtain the Shelf and DecorationSlot instances from the API, place them at the designated coordinates and with height/width as prescribed by the corresponding data model instances.
+3. Obtain BookCover instances from the API and place them inside the corresponding Shelf instances. The spine images of the Books should be displayed on the shelves.
+4. Obtain Decoration instances from the API, based on the dec_id fields of the DecorationSlot instances and display them inside the corresponding slots.
+5. Display an <Add Book> button on the bottom of the page
+
+User stories:
+1. When the user clicks on a Book, it should rotate horizontally by 90 degrees and enlarge, such that the user can clearly see the cover image. An accompanying container should be displayed along with it, showing details about the book. Details can be obtained from the Book and BookProgress objects via the API. When the user clicks the book again, it should be de-selected and move back to its place on the bookshelf. There should also be appropriate 'edit' options and a button that removes the book from the bookshelf (shelf_id will be set to -1). If a book is edited or removed from the shelf, appropriate updates should be made to the database.
+2. When the Add Book button is pressed, an empty form is displayed, where the user can specify any attribute of a Book and BookCover object and upload spine and cover photos. When the user clicks 'Save', the new Book should be added to the Shelf - if possible - and finally a new Book should be created through the API, along with a BookCover and an empty BookProgress object.
+
+
+Keep in mind the following requirements:
+- The size of the page is defined by the Layout, and it should not shrink/expand when the window size changes.
+- The entire Bookshelf, including the Layout, the Shelf, the spine images of the books as well as the decorations should be placed within a TransformWrapper entity, from the react-zoom-pan-pinch library. The Add Book button, and the Book details page, when a book is selected, should not be a part of this.
+- Each Book is assigned to a single Shelf and the app makes sure that no Shelf is overloaded, i.e. the maximum number of books is defined by the width of a shelf.
+- Books have a pre-defined size, which is always adjusted to fit within the corresponding Shelf container. The height of the books cannot be larger than the Shelf component's height. If this is the case, Books should be resized, such that the height/width ratio doesn't change.
+
+Final remarks:
+I chose you specifically, because I know you have the necessary skillset in both React and Javascript to succesfully complete this task. You are one of the best developers and I know you will do an incredible job! Good luck, and thank you for your time in advance!

@@ -2,14 +2,74 @@
 use log::{debug,warn,info,error};
 use actix_web::Responder;
 use actix_web::{web, HttpResponse};
-use redis::{AsyncCommands, RedisError};
-use crate::db_conn::{Shelf, Book, BookCover, BookProgress, DefaultResponse,
+use redis::AsyncCommands;
+use crate::db_conn::{Layout, //CurrentLayout,
+                    Shelf, Book, BookCover, BookProgress, DefaultResponse,
                     DecorationSlot, Decoration,
+                    LAYOUT_KEY, CURRENT_LAYOUT_KEY,
                     SHELF_KEY, BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
                     DECORATION_SLOT_KEY, DECORATION_KEY};
 use uuid::Uuid;
 
-pub async fn get_shelves(conn: web::Data<redis::Client>) -> impl Responder {
+async fn _get_layout_by_id(layout_id: &str, conn: &mut redis::aio::MultiplexedConnection) -> Option<Layout> {
+    let layout_str: String = match conn.hget(&LAYOUT_KEY, layout_id).await {
+        Ok(layout_str) => layout_str,
+        Err(_) => {
+            warn!("{} key not found in Redis", LAYOUT_KEY);
+            return None
+        }
+    };
+    let layout: Layout = match serde_json::from_str(&layout_str) {
+        Ok(layout) => layout,
+        Err(_) => {
+            error!("Failed to parse layout: {}", layout_str);
+            return None
+        }
+    };
+    Some(layout)
+}
+
+pub async fn get_layout(layout_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
+    info!("Getting layout");
+    let layout_id = layout_id.into_inner();
+    let mut con = match conn.get_multiplexed_tokio_connection().await {
+        Ok(con) => con,
+        Err(_) => {
+            error!("Failed to get connection to Redis");
+            return HttpResponse::InternalServerError().json(DefaultResponse::default())
+        }
+    };
+    let layout: Option<Layout> = _get_layout_by_id(&layout_id, &mut con).await;
+    match layout {
+        Some(layout) => HttpResponse::Ok().json(layout),
+        None => HttpResponse::NotFound().json(DefaultResponse::default())
+    }
+}
+
+pub async fn get_current_layout(conn: web::Data<redis::Client>) -> impl Responder {
+    info!("Getting current layout");
+    let mut con = match conn.get_multiplexed_tokio_connection().await {
+        Ok(con) => con,
+        Err(_) => {
+            error!("Failed to get connection to Redis");
+            return HttpResponse::InternalServerError().json(DefaultResponse::default())
+        }
+    };
+    let layout_id: String = match con.hget(&CURRENT_LAYOUT_KEY, "layout_id").await {
+        Ok(layout_id) => layout_id,
+        Err(_) => {
+            warn!("{} key not found in Redis", CURRENT_LAYOUT_KEY);
+            return HttpResponse::NotFound().json(DefaultResponse::default())
+        }
+    };
+    let layout: Option<Layout> = _get_layout_by_id(&layout_id, &mut con).await;
+    match layout {
+        Some(layout) => HttpResponse::Ok().json(layout),
+        None => HttpResponse::NotFound().json(DefaultResponse::default())
+    }
+}
+
+pub async fn get_shelves(layout_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
     info!("Getting shelves");
     let mut shelfs: Vec<Shelf> = Vec::new();
 
@@ -20,10 +80,12 @@ pub async fn get_shelves(conn: web::Data<redis::Client>) -> impl Responder {
             return HttpResponse::InternalServerError().json(shelfs)
         }
     };
-    let shelf_strs: Vec<String> = match con.hvals(&SHELF_KEY).await {
+    let layout_id = layout_id.into_inner();
+    let shelf_key: String = format!("{}:{}", SHELF_KEY, layout_id);
+    let shelf_strs: Vec<String> = match con.hvals(&shelf_key).await {
         Ok(shelf_strs) => shelf_strs,
         Err(_) => {
-            warn!("{} key not found in Redis", SHELF_KEY);
+            warn!("{} key not found in Redis", shelf_key.clone());
             return HttpResponse::Ok().json(shelfs)
         }
     };
@@ -190,7 +252,6 @@ pub async fn set_book_progress(conn: web::Data<redis::Client>, book_progress: we
     HttpResponse::Ok().json(DefaultResponse::default())
 }
 
-// NOT USED
 pub async fn set_decoration_slot(conn: web::Data<redis::Client>, decoration_slot: web::Json<DecorationSlot>) -> impl Responder {
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     let decoration_slot = decoration_slot.into_inner();

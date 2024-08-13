@@ -5,6 +5,8 @@ use chrono::{DateTime, Utc};  // You need to add `chrono` to your Cargo.toml too
 use log::debug;
 use serde_json::Number;
 
+pub const CURRENT_LAYOUT_KEY: &str = "crnt_layout";
+pub const LAYOUT_KEY: &str = "layouts";
 pub const SHELF_KEY: &str = "shelves";
 pub const BOOK_KEY: &str = "books";
 pub const BOOK_COVER_KEY: &str = "book_covers";
@@ -25,6 +27,17 @@ impl Default for DefaultResponse {
     }
 }
 
+
+#[derive(Serialize, Deserialize)]
+pub struct Layout {
+    pub id: String,
+    pub layout_fname: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CurrentLayout {
+    pub layout_id: String,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct Shelf {
@@ -49,7 +62,10 @@ pub struct Book {
 pub struct BookCover {
     pub book_id: String,
     pub cover_fname: String,
-    pub spine_fname: String
+    pub spine_fname: String,
+    pub book_height: Number,
+    pub book_width: Number,
+    pub spine_width: Number,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -64,6 +80,7 @@ pub struct BookProgress {
 #[derive(Serialize, Deserialize)]
 pub struct DecorationSlot {
     pub id: Number,
+    pub layout_id: String,
     pub x_pos: Number,
     pub y_pos: Number,
     pub height: Number,

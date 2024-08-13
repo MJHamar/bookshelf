@@ -35,7 +35,9 @@ pub async fn serve() -> std::io::Result<()> {
             .wrap(cors)
             .app_data(Data::new(redis.clone()))
             .route("/", web::get().to(index))
-            .route("/books/shelves", web::get().to(bookshelf::get_shelves))
+            .route("/books/layout/{layout_id}", web::get().to(bookshelf::get_layout))
+            .route("/books/layout/current", web::get().to(bookshelf::get_current_layout))
+            .route("/books/shelves/{layout_id}", web::get().to(bookshelf::get_shelves))
             .route("/books", web::get().to(bookshelf::get_books))
             .route("/books/covers", web::get().to(bookshelf::get_book_covers))
             .route("/books/progress", web::get().to(bookshelf::get_book_progress))
@@ -44,6 +46,7 @@ pub async fn serve() -> std::io::Result<()> {
             .route("/books", web::post().to(bookshelf::set_book))
             .route("/books/covers", web::post().to(bookshelf::set_book_cover))
             .route("/books/progress", web::post().to(bookshelf::set_book_progress))
+            .route("/books/decoration_slots", web::post().to(bookshelf::set_decoration_slot))
             .route("/books/decoration", web::post().to(bookshelf::set_decoration))
     })
     .bind(server_url)?
