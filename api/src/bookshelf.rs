@@ -136,29 +136,34 @@ pub async fn set_book(conn: web::Data<redis::Client>, book: web::Json<Book>) -> 
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     // check if book already exists
     // i.e. if book.id is not None and book.id is in the BOOK_KEY
-    if book.into_inner().id != "" {
-        let book_id: String = book.into_inner().id;
+    let book = book.into_inner();
+    if book.id != "" {
+        let book_id: String = book.id.clone();
         let book_str: Option<String>  = con.hget(&BOOK_KEY, book_id.clone()).await.expect("Failed to read book");
         if book_str.is_some() {
         // Update the book
         let book_str: String = serde_json::to_string(&book).expect("Failed to serialize book");
-        con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
+        let _: () = con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
         return HttpResponse::Ok().json(DefaultResponse::default());
     } else {
             // create new book
-            let book_id = Uuid::new_v4().to_string();
-            let book = book.into_inner();
-            book.id = book_id.clone();
-            let book_str = serde_json::to_string(&book).expect("Failed to serialize book");
-            con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
+            let new_book = Book {
+                id: Uuid::new_v4().to_string(),
+                shelf_id: book.shelf_id,
+                title: book.title,
+                author: book.author,
+                isbn: book.isbn,
+                description: book.description,
+            };
+            let book_str = serde_json::to_string(&new_book).expect("Failed to serialize book");
+            let _: () = con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
             return HttpResponse::Ok().json(DefaultResponse::default())
         }
     }
     let book_id = book.id.to_string();
-    let book = book.into_inner();
     let book_str = serde_json::to_string(&book).expect("Failed to serialize book");
 
-    con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
+    let _: () = con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
@@ -169,7 +174,7 @@ pub async fn set_book_cover(conn: web::Data<redis::Client>, book_cover: web::Jso
     let book_id: String = book_cover.book_id.to_string();
     let book_cover_str: String = serde_json::to_string(&book_cover).expect("Failed to serialize book cover");
 
-    con.hset(&BOOK_COVER_KEY, book_id, book_cover_str).await.expect("Failed to set book cover");
+    let _: () = con.hset(&BOOK_COVER_KEY, book_id, book_cover_str).await.expect("Failed to set book cover");
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
@@ -180,7 +185,7 @@ pub async fn set_book_progress(conn: web::Data<redis::Client>, book_progress: we
     let book_id = book_progress.book_id.to_string();
     let book_progress_str: String = serde_json::to_string(&book_progress).expect("Failed to serialize book progress");
     
-    con.hset(&BOOK_PROGRESS_KEY, book_id, &book_progress_str as &str).await.expect("Failed to set book progress");
+    let _: () = con.hset(&BOOK_PROGRESS_KEY, book_id, &book_progress_str as &str).await.expect("Failed to set book progress");
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
@@ -192,7 +197,7 @@ pub async fn set_decoration_slot(conn: web::Data<redis::Client>, decoration_slot
     let slot_id = decoration_slot.id.to_string();
     let decoration_slot_str = serde_json::to_string(&decoration_slot).expect("Failed to serialize decoration slot");
 
-    con.hset(&DECORATION_SLOT_KEY, slot_id, decoration_slot_str).await.expect("Failed to set decoration slot");
+    let _: () = con.hset(&DECORATION_SLOT_KEY, slot_id, decoration_slot_str).await.expect("Failed to set decoration slot");
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
@@ -203,7 +208,7 @@ pub async fn set_decoration(conn: web::Data<redis::Client>, decoration: web::Jso
     let dec_id = decoration.id.to_string();
     let decoration_str = serde_json::to_string(&decoration).expect("Failed to serialize decoration");
 
-    con.hset(&DECORATION_KEY, dec_id, decoration_str).await.expect("Failed to set decoration");
+    let _: () = con.hset(&DECORATION_KEY, dec_id, decoration_str).await.expect("Failed to set decoration");
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
