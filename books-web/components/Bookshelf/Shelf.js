@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Book from './Book';
+import { getBookCovers } from '../../utils/api';
 
-const Shelf = ({ shelf, books, covers }) => {
+const Shelf = ({ shelf, b2sMaps }) => {
     let totalSpineWidth = 0;
+
+    const [bookCovers, setBookCovers] = useState([]);
+
+    const bookIds = b2sMaps.map(b2s => b2s.book_id);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const coversData = await getBookCovers(bookIds);
+            setBookCovers(coversData);
+            console.log(coversData);
+        };
+        fetchData();
+    }, []);
 
     return (
         <div style={{
@@ -12,14 +26,14 @@ const Shelf = ({ shelf, books, covers }) => {
             width: shelf.width,
             height: shelf.height,
             display: 'flex',
-            alignItems: 'flex-end'
+            alignItems: 'flex-end',
+            zIndex: 100
         }}>
-            {books.map(book => {
-                const cover = covers.find(c => c.book_id === book.id);
+            {bookCovers.map(cover => {
                 totalSpineWidth += cover.spine_width;
 
                 if (totalSpineWidth <= shelf.width) {
-                    return <Book key={book.id} book={book} cover={cover} />;
+                    return <Book key={cover.book_id} cover={cover} />;
                 }
                 // If no more space on this shelf, skip the book.
                 return null;

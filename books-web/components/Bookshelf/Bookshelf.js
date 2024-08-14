@@ -1,48 +1,98 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import Shelf from './Shelf';
 import Decoration from './Decoration';
-import { getCurrentLayout, getShelves, getBooks, getBookCovers, getDecorations } from '../../utils/api';
+import {
+    getCurrentLayout, getShelves,
+    getBooks, getB2SMapping, getBookCovers, getBookProgress,
+    getDecorations, getDecorationSlots
+} from '../../utils/api';
 
 const Bookshelf = () => {
     const [layout, setLayout] = useState(null);
+    const [layoutData, setLayoutData] = useState(null);
     const [shelves, setShelves] = useState([]);
-    const [books, setBooks] = useState([]);
-    const [bookCovers, setBookCovers] = useState([]);
+    const [b2s_map, setB2SMap] = useState([]);
+    const [decoration_slots, setDecorationSlots] = useState([]);
     const [decorations, setDecorations] = useState([]);
+
+
+    useEffect(() => {
+        const fetchLayout = async () => {
+            const crnt_layout = await getCurrentLayout();
+            console.log(`layout: ${JSON.stringify(crnt_layout)}`);
+            setLayoutData(crnt_layout);
+
+        };
+        fetchLayout();
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
-            const layoutData = await getCurrentLayout();
-            setLayout(layoutData);
-
-            const shelvesData = await getShelves();
+            // TODO: add Texture component to overlay the layout with a texture
+            // Texture path should be a part of the Layout data
+            if (!layoutData) {
+                return;
+            }
+            const b2sMap = await getB2SMapping(layoutData.id);
+            setB2SMap(b2sMap);
+            var bookIds = b2s_map.map(b2s => b2s.book_id);
+            console.log(`book ids: ${JSON.stringify(bookIds)}`);
+    
+            const shelvesData = await getShelves(layoutData.id);
             setShelves(shelvesData);
+            console.log(`shelves: ${JSON.stringify(shelvesData)}`);
 
-            const booksData = await getBooks();
-            setBooks(booksData);
-
-            const bookIds = booksData.map(book => book.id);
-            const coversData = await getBookCovers(bookIds);
-            setBookCovers(coversData);
-
-            const decorationSlots = shelvesData.map(shelf => shelf.slot_id);
+            const decorationSlots = await getDecorationSlots(layoutData.id);
+            setDecorationSlots(decorationSlots);
+            console.log(`decoration slots: ${JSON.stringify(decorationSlots)}`);
+    
+            if (decorationSlots.length === 0) {
+                console.log("No decorations found");
+                return
+            };
             const decorationsData = await getDecorations(decorationSlots);
             setDecorations(decorationsData);
+            console.log(`decoration data: ${JSON.stringify(decorationsData)}`);
+
         };
-
+        
         fetchData();
-    }, []);
+        
+    }, [layoutData]);
+    
+    useEffect(() => {
+        if (!layoutData) {
+            return;
+        }
+        const fetchLayoutSVG = async () => {
+            fetch(layoutData.layout_fname)
+                .then((response) => response.text())
+                .then((data) => {
+                    setLayout(data);
+                })
+                .catch((error) => {
+                    console.error('Error loading SVG:', error);
+                });
+        };
+        fetchLayoutSVG();
+    }, [layoutData]);
 
-    if (!layout) return <div>Loading...</div>;
+    if (!layout || !layoutData) {
+        return <div>Loading...</div>;
+    }
 
     return (
-        <div style={{ position: 'relative', width: layout.width, height: layout.height }}>
-            <TransformWrapper>
+        <div style={{ position: 'relative', width: layoutData.width, height: layoutData.height }}>
+            <TransformWrapper style={{ zIndex: "1", height: "100%", width: "100%" }}>
                 <TransformComponent>
-                    <img src={layout.layout_fname} alt="Bookshelf Layout" style={{ width: '100%', height: '100%' }} />
+                    <div
+                        className="layout"
+                        dangerouslySetInnerHTML={{ __html: layout }}
+                    />
                     {shelves.map(shelf => (
-                        <Shelf key={shelf.id} shelf={shelf} books={books.filter(book => book.shelf_id === shelf.id)} covers={bookCovers} />
+                        // TODO: have the LayoutData define Shelves and DecorationSlots
+                        <Shelf key={shelf.id} shelf={shelf} b2sMaps={b2s_map.filter(book => book.shelf_id === shelf.id)}/>
                     ))}
                     {decorations.map(decoration => (
                         <Decoration key={decoration.id} decoration={decoration} />

@@ -8,6 +8,7 @@ use serde_json::Number;
 pub const CURRENT_LAYOUT_KEY: &str = "crnt_layout";
 pub const LAYOUT_KEY: &str = "layouts";
 pub const SHELF_KEY: &str = "shelves";
+pub const BOOK2SHELF_KEY: &str = "book2shelf";
 pub const BOOK_KEY: &str = "books";
 pub const BOOK_COVER_KEY: &str = "book_covers";
 pub const BOOK_PROGRESS_KEY: &str = "book_progress";
@@ -27,11 +28,13 @@ impl Default for DefaultResponse {
     }
 }
 
-
 #[derive(Serialize, Deserialize)]
 pub struct Layout {
     pub id: String,
     pub layout_fname: String,
+    pub width: Number,
+    pub height: Number,
+    // TODO: add schelf and decoration slot numbers
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,6 +46,10 @@ pub struct Shelf {
     pub width: Number,
 }
 
+#[derive(Deserialize)]
+pub struct BookIdList {
+    pub book_ids: Vec<String>
+}
 #[derive(Serialize, Deserialize)]
 pub struct Book {
     pub id: String,
@@ -53,9 +60,14 @@ pub struct Book {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct Book2Shelf {
+    pub book_id: String,
+    pub shelf_id: Number,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct BookCover {
     pub book_id: String,
-    pub shelf_id: Number, // -1 if not on a shelf
     pub cover_fname: String,
     pub spine_fname: String,
     pub book_height: Number,
@@ -84,10 +96,15 @@ pub struct DecorationSlot {
 
 #[derive(Serialize, Deserialize)]
 pub struct Decoration {
-    pub id: Number,
+    pub id: String,
     pub slot_id: Number,
     pub decoration_type: String, 
     pub decoration_fname: String,
+}
+
+#[derive(Deserialize)]
+pub struct DecorationIdList {
+    pub dec_ids: Vec<String>
 }
 
 pub async fn test_redis(params: String) -> redis::RedisResult<()> {

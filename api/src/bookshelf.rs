@@ -4,10 +4,10 @@ use actix_web::Responder;
 use actix_web::{web, HttpResponse};
 use redis::AsyncCommands;
 use crate::db_conn::{Layout, //CurrentLayout,
-                    Shelf, Book, BookCover, BookProgress, DefaultResponse,
-                    DecorationSlot, Decoration,
+                    Shelf, Book2Shelf, BookIdList, Book, BookCover, BookProgress, DefaultResponse,
+                    DecorationSlot, Decoration, DecorationIdList,
                     LAYOUT_KEY, CURRENT_LAYOUT_KEY,
-                    SHELF_KEY, BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
+                    SHELF_KEY, BOOK2SHELF_KEY, BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
                     DECORATION_SLOT_KEY, DECORATION_KEY};
 use uuid::Uuid;
 
@@ -106,8 +106,46 @@ pub async fn get_shelves(layout_id: web::Path<String>, conn: web::Data<redis::Cl
     HttpResponse::Ok().json(shelfs)
 }
 
-pub async fn get_books(conn: web::Data<redis::Client>) -> impl Responder {
-    info!("Getting shelves");
+pub async fn get_book2shelf_map(layout_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
+    info!("Getting book2shelf map");
+    let mut book2shelf_map: Vec<Book2Shelf> = Vec::new();
+
+    let mut con = match conn.get_multiplexed_tokio_connection().await {
+        Ok(con) => con,
+        Err(_) => {
+            error!("Failed to get connection to Redis");
+            return HttpResponse::InternalServerError().json(book2shelf_map)
+        }
+    };
+    let layout_id = layout_id.into_inner();
+    let book2shelf_key: String = format!("{}:{}", BOOK2SHELF_KEY, layout_id);
+    let book2shelf_strs: Vec<String> = match con.hvals(&book2shelf_key).await {
+        Ok(book2shelf_strs) => book2shelf_strs,
+        Err(_) => {
+            warn!("{} key not found in Redis", book2shelf_key.clone());
+            return HttpResponse::Ok().json(book2shelf_map)
+        }
+    };
+
+    // query all book2shelf_strs at once
+    for book2shelf_str in book2shelf_strs {
+        let book2shelf: Book2Shelf = match serde_json::from_str(&book2shelf_str) {
+            Ok(book2shelf) => book2shelf,
+            Err(_) => {
+                error!("Failed to parse book2shelf: {}", book2shelf_str);
+                return HttpResponse::InternalServerError().json(book2shelf_map)
+            }
+        };
+        debug!("Retreived book2shelf: {:?}", book2shelf.book_id);
+        book2shelf_map.push(book2shelf);
+    }
+
+    HttpResponse::Ok().json(book2shelf_map)
+}
+
+pub async fn get_books(book_ids: web::Json<BookIdList>, conn: web::Data<redis::Client>) -> impl Responder {
+    info!("Getting books");
+    let book_ids = &book_ids.book_ids;
     let mut books: Vec<Book> = Vec::new();
 
     let mut con = match conn.get_multiplexed_tokio_connection().await {
@@ -117,16 +155,16 @@ pub async fn get_books(conn: web::Data<redis::Client>) -> impl Responder {
             return HttpResponse::InternalServerError().json(books)
         }
     };
-    let book_strs: Vec<String> = match con.hvals(&BOOK_KEY).await {
-        Ok(book_strs) => book_strs,
-        Err(_) => {
-            warn!("{} key not found in Redis", BOOK_KEY);
-            return HttpResponse::Ok().json(books)
-        }
-    };
 
     // query all book_strs at once
-    for book_str in book_strs {
+    for book_id in book_ids.iter() {
+        let book_str: String = match con.hget(&BOOK_KEY, book_id).await {
+            Ok(book_str) => book_str,
+            Err(_) => {
+                warn!("{}:{} key not found in Redis", BOOK_KEY, book_id);
+                return HttpResponse::Ok().json(books)
+            }
+        };
         let book: Book = match serde_json::from_str(&book_str) {
             Ok(book) => book,
             Err(_) => {
@@ -141,7 +179,8 @@ pub async fn get_books(conn: web::Data<redis::Client>) -> impl Responder {
     HttpResponse::Ok().json(books)
 }
 
-pub async fn get_book_covers(book_ids: web::Json<Vec<String>>, conn: web::Data<redis::Client>) -> impl Responder {
+pub async fn get_book_covers(book_ids: web::Json<BookIdList>, conn: web::Data<redis::Client>) -> impl Responder {
+    let book_ids  = &book_ids.book_ids;
     let mut book_covers: Vec<BookCover> = Vec::new();
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
 
@@ -154,7 +193,8 @@ pub async fn get_book_covers(book_ids: web::Json<Vec<String>>, conn: web::Data<r
     HttpResponse::Ok().json(book_covers)
 }
 
-pub async fn get_book_progress(book_ids: web::Json<Vec<String>>, conn: web::Data<redis::Client>) -> impl Responder {
+pub async fn get_book_progress(book_ids: web::Json<BookIdList>, conn: web::Data<redis::Client>) -> impl Responder {
+    let book_ids = &book_ids.book_ids;
     let mut book_progress_v: Vec<BookProgress> = Vec::new();
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
 
@@ -167,11 +207,11 @@ pub async fn get_book_progress(book_ids: web::Json<Vec<String>>, conn: web::Data
     HttpResponse::Ok().json(book_progress_v)
 }
 
-pub async fn get_decoration_slots(conn: web::Data<redis::Client>) -> impl Responder {
+pub async fn get_decoration_slots(layout_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
     let mut decoration_slots: Vec<DecorationSlot> = Vec::new();
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-
-    let decoration_slot_strs: Vec<String> = con.hvals(&DECORATION_SLOT_KEY).await.expect("Failed to read decoration slots");
+    let decoration_slot_key = format!("{}:{}", DECORATION_SLOT_KEY, layout_id.into_inner());
+    let decoration_slot_strs: Vec<String> = con.hvals(decoration_slot_key).await.expect("Failed to read decoration slots");
 
     for decoration_slot_str in decoration_slot_strs {
         let decoration_slot: DecorationSlot = serde_json::from_str(&decoration_slot_str).expect("Failed to parse decoration slot");
@@ -181,7 +221,8 @@ pub async fn get_decoration_slots(conn: web::Data<redis::Client>) -> impl Respon
     HttpResponse::Ok().json(decoration_slots)
 }
 
-pub async fn get_decorations(dec_ids: web::Json<Vec<String>>, conn: web::Data<redis::Client>) -> impl Responder {
+pub async fn get_decorations(dec_ids: web::Json<DecorationIdList>, conn: web::Data<redis::Client>) -> impl Responder {
+    let dec_ids = &dec_ids.dec_ids;
     let mut decorations: Vec<Decoration> = Vec::new();
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
 
