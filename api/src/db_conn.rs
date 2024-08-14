@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};  // You need to add `chrono` to your Cargo.toml too
 use log::debug;
 use serde_json::Number;
+use std::option::Option;
 
 pub const CURRENT_LAYOUT_KEY: &str = "crnt_layout";
 pub const LAYOUT_KEY: &str = "layouts";
@@ -79,9 +80,9 @@ pub struct BookCover {
 pub struct BookProgress {
     pub book_id: String,
     pub progress: Number, // 0: not started, 1: started, 2: finished
-    pub started_dt: DateTime<Utc>,
-    pub finished_dt: DateTime<Utc>,
-    pub last_read_dt: DateTime<Utc>
+    pub started_dt: Option<DateTime<Utc>>,
+    pub finished_dt: Option<DateTime<Utc>>,
+    pub last_read_dt: Option<DateTime<Utc>>
 }
 
 #[derive(Serialize, Deserialize)]
