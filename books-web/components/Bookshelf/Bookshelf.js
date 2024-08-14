@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import Shelf from './Shelf';
 import Decoration from './Decoration';
+import BookDetails from './BookDetails';
 import {
     getCurrentLayout, getShelves,
     getBooks, getB2SMapping, getBookCovers, getBookProgress,
@@ -9,14 +10,17 @@ import {
 } from '../../utils/api';
 
 const Bookshelf = () => {
-    const [layout, setLayout] = useState(null);
+
     const [layoutData, setLayoutData] = useState(null);
+    const [layout, setLayout] = useState(null);
     const [shelves, setShelves] = useState([]);
     const [b2s_map, setB2SMap] = useState([]);
     const [decoration_slots, setDecorationSlots] = useState([]);
     const [decorations, setDecorations] = useState([]);
 
+    const [selectedBook, setSelectedBook] = useState(null);
 
+    // obtain Layout data upon startup
     useEffect(() => {
         const fetchLayout = async () => {
             const crnt_layout = await getCurrentLayout();
@@ -27,6 +31,7 @@ const Bookshelf = () => {
         fetchLayout();
     }, []);
 
+    // obtain Shelf and Decoration data upon Layout data retrieval
     useEffect(() => {
         const fetchData = async () => {
             // TODO: add Texture component to overlay the layout with a texture
@@ -60,7 +65,8 @@ const Bookshelf = () => {
         fetchData();
         
     }, [layoutData]);
-    
+
+    // obtain layout SVG upon Layout data retrieval
     useEffect(() => {
         if (!layoutData) {
             return;
@@ -92,13 +98,21 @@ const Bookshelf = () => {
                     />
                     {shelves.map(shelf => (
                         // TODO: have the LayoutData define Shelves and DecorationSlots
-                        <Shelf key={shelf.id} shelf={shelf} b2sMaps={b2s_map.filter(book => book.shelf_id === shelf.id)}/>
+                        <Shelf key={shelf.id}
+                            shelf={shelf}
+                            b2sMaps={b2s_map.filter(book => book.shelf_id === shelf.id)}
+                            selectedBook={selectedBook} setSelectedBook={setSelectedBook}
+                        />
                     ))}
                     {decorations.map(decoration => (
                         <Decoration key={decoration.id} decoration={decoration} />
                     ))}
                 </TransformComponent>
             </TransformWrapper>
+            <BookDetails
+                selectedBook={selectedBook}
+                setSelectedBook={setSelectedBook}
+            />
         </div>
     );
 };

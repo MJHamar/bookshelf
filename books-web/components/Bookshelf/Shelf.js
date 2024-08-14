@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Book from './Book';
+import BookOnShelf from './BookOnShelf';
 import { getBookCovers } from '../../utils/api';
 
-const Shelf = ({ shelf, b2sMaps }) => {
+const Shelf = ({ shelf, b2sMaps, selectedBook, setSelectedBook }) => {
     let totalSpineWidth = 0;
 
     const [bookCovers, setBookCovers] = useState([]);
@@ -33,7 +33,12 @@ const Shelf = ({ shelf, b2sMaps }) => {
                 totalSpineWidth += cover.spine_width;
 
                 if (totalSpineWidth <= shelf.width) {
-                    return <Book key={cover.book_id} cover={cover} />;
+                    return <BookOnShelf
+                        key={cover.book_id}
+                        cover={cover}
+                        selectedBook={selectedBook}
+                        setSelectedBook={setSelectedBook}
+                    />;
                 }
                 // If no more space on this shelf, skip the book.
                 return null;
