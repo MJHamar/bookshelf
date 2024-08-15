@@ -82,6 +82,7 @@ pub struct BookCover {
     pub spine_width: Number, // defaults to 50
 }
 
+
 #[derive(Serialize, Deserialize)]
 pub struct BookProgress {
     pub book_id: String,

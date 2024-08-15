@@ -239,8 +239,7 @@ pub async fn get_decorations(dec_ids: web::Json<DecorationIdList>, conn: web::Da
     HttpResponse::Ok().json(decorations)
 }
 
-pub async fn create_book(conn: web::Data<redis::Client>) -> impl Responder {
-    let con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+pub async fn create_book() -> impl Responder {
     let book = Book {
         id: Uuid::new_v4().to_string(),
         title: None,
@@ -276,12 +275,18 @@ pub async fn create_book(conn: web::Data<redis::Client>) -> impl Responder {
 
 }
 
-pub async fn set_book(conn: web::Data<redis::Client>, book: web::Json<Book>) -> impl Responder {
+pub async fn set_book(conn: web::Data<redis::Client>, mut body: web::Payload) -> impl Responder {
+    info!("Setting book_data");
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-    // check if book already exists
-    // i.e. if book.id is not None and book.id is in the BOOK_KEY
-    let book = book.into_inner();
-    let _ = match _set_book(&mut con, &book).await {
+    let mut bytes = web::BytesMut::new();
+    while let Some(item) = futures::StreamExt::next(&mut body).await {
+        bytes.extend_from_slice(&item.unwrap());
+    }
+    let book_data = String::from_utf8_lossy(&bytes).to_string();
+    info!("Book_data: {}", book_data);
+    let book_data_deserialized: Book = serde_json::from_str(&book_data).expect("Failed to deserialize book_data");
+
+    let _ = match _set_book(&mut con, &book_data_deserialized).await {
         Ok(_) => (),
         Err(e) => {
             error!("Failed to set book: {}", e);
@@ -292,13 +297,21 @@ pub async fn set_book(conn: web::Data<redis::Client>, book: web::Json<Book>) -> 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
 
-pub async fn set_book_cover(conn: web::Data<redis::Client>, book_cover: web::Json<BookCover>) -> impl Responder {
+pub async fn set_book_cover(conn: web::Data<redis::Client>, mut body: web::Payload) -> impl Responder {
+    info!("Setting book cover");
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-    let book_cover = book_cover.into_inner();
-    let _ = match _set_book_cover(&mut con, &book_cover).await {
+    let mut bytes = web::BytesMut::new();
+    while let Some(item) = futures::StreamExt::next(&mut body).await {
+        bytes.extend_from_slice(&item.unwrap());
+    }
+    let book_cover = String::from_utf8_lossy(&bytes).to_string();
+    info!("Book cover: {}", book_cover);
+    let book_cover_deserialized: BookCover = serde_json::from_str(&book_cover).expect("Failed to deserialize book cover");
+
+    let _ = match _set_book_cover(&mut con, &book_cover_deserialized).await {
         Ok(_) => (),
         Err(e) => {
-            error!("Failed to set book cover: {}", e);
+            error!("Failed to set book: {}", e);
             return HttpResponse::InternalServerError().json(DefaultResponse::default())
         }
     };
@@ -306,17 +319,26 @@ pub async fn set_book_cover(conn: web::Data<redis::Client>, book_cover: web::Jso
     HttpResponse::Ok().json(DefaultResponse::default())
 }
 
-pub async fn set_book_progress(conn: web::Data<redis::Client>, book_progress: web::Json<BookProgress>) -> impl Responder {
+pub async fn set_book_progress(conn: web::Data<redis::Client>, mut body: web::Payload) -> impl Responder {
+    info!("Setting book progress");
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-    let book_progress = book_progress.into_inner();
+    let mut bytes = web::BytesMut::new();
+    while let Some(item) = futures::StreamExt::next(&mut body).await {
+        bytes.extend_from_slice(&item.unwrap());
+    }
+    let book_progress = String::from_utf8_lossy(&bytes).to_string();
+    info!("Book progress: {}", book_progress);
+    let book_progress_deserialized: BookProgress = serde_json::from_str(&book_progress).expect("Failed to deserialize book progress");
+    
 
-    let _ = match _set_book_progress(&mut con, &book_progress).await {
+    let _ = match _set_book_progress(&mut con, &book_progress_deserialized).await {
         Ok(_) => (),
         Err(e) => {
             error!("Failed to set book: {}", e);
             return HttpResponse::InternalServerError().json(DefaultResponse::default())
         }
     };
+
     HttpResponse::Ok().json(DefaultResponse::default())
 }
 
