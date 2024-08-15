@@ -34,7 +34,6 @@ const Shelf = ({ shelf, b2sMaps, selectedBook, setSelectedBook }) => {
 
                 if (totalSpineWidth <= shelf.width) {
                     return <BookOnShelf
-                        key={cover.book_id}
                         cover={cover}
                         selectedBook={selectedBook}
                         setSelectedBook={setSelectedBook}

@@ -32,6 +32,9 @@ const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
             setSelectedBook(null);
             return;
         }
+        console.log(`selected book: ${JSON.stringify(selectedBook)}`); 
+        console.log(setSelectedBook);
+        console.log(`cover: ${ JSON.stringify(cover) }`);
         setSelectedBook({ cover: cover });
     };
 

@@ -240,7 +240,7 @@ pub async fn get_decorations(dec_ids: web::Json<DecorationIdList>, conn: web::Da
 }
 
 pub async fn create_book(conn: web::Data<redis::Client>) -> impl Responder {
-    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     let book = Book {
         id: Uuid::new_v4().to_string(),
         title: None,
@@ -258,7 +258,6 @@ pub async fn create_book(conn: web::Data<redis::Client>) -> impl Responder {
     };
     let book_progress = BookProgress {
         book_id: book.id.clone(),
-        progress: 0.into(),
         started_dt: None,
         finished_dt: None,
         last_read_dt: None,

@@ -85,7 +85,6 @@ pub struct BookCover {
 #[derive(Serialize, Deserialize)]
 pub struct BookProgress {
     pub book_id: String,
-    pub progress: Number, // 0: not started, 1: started, 2: finished
     pub started_dt: Option<DateTime<Utc>>,
     pub finished_dt: Option<DateTime<Utc>>,
     pub last_read_dt: Option<DateTime<Utc>>

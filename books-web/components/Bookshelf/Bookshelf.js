@@ -13,8 +13,8 @@ import {
 import BookEditor from './BookEditor';
 
 const Bookshelf = (
-    selectedBook, setSelectedBook,
-    isEditing, setIsEditing
+    { selectedBook, setSelectedBook,
+    isEditing, setIsEditing }
 ) => {
 
     const [layoutData, setLayoutData] = useState(null);
@@ -124,7 +124,8 @@ const Bookshelf = (
                     />
                     {shelves.map(shelf => (
                         // TODO: have the LayoutData define Shelves and DecorationSlots
-                        <Shelf key={shelf.id}
+                        <Shelf
+                            key={shelf.id}
                             shelf={shelf}
                             b2sMaps={b2s_map.filter(book => book.shelf_id === shelf.id)}
                             selectedBook={selectedBook} setSelectedBook={setSelectedBook}
