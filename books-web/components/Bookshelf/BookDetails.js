@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getBooks, getBookProgress } from '../../utils/api';
+import BookEditor from './BookEditor';
 import { format, set } from 'date-fns';
 import styles from '../../styles/BookDetails.module.css';
 
@@ -9,11 +10,11 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
     const [cover, setCover] = useState(null);
     const [book, setBook] = useState(null);
     const [bookProgress, setBookProgress] = useState(null);
-    // see if we need to update anything
+    // in Details mode, see if we need to update anything
     const [startedUpdate, setStartedUpdate] = useState(null);
     const [finishedUpdate, setFinishedUpdate] = useState(null);
     const [lastReadUpdate, setLastReadUpdate] = useState(null);
-    // other updates are handled by the editor view
+    // other updates are handled directly in the three structures' state
 
     // get information about the selected book
     useEffect(() => {
@@ -74,14 +75,23 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
         fetchBookDetails();
     }, [bookId]);
 
+    useEffect(() => {
+        if (bookProgress) {
+            console.log(`book progress: ${JSON.stringify(bookProgress)}`);
+        }
+        console.log(`progress before save: ${JSON.stringify(bookProgress)}`);
+        console.log(`started update: ${JSON.stringify(startedUpdate)}`);
+        console.log(`finished update: ${JSON.stringify(finishedUpdate)}`);
+        onSave({ book: null, cover: null, progress: bookProgress });
+    }
+    , [bookProgress]);
     //
     //_______ changes to book data _______
     //
 
     // BookProgress.progress attribute
-    const handleProgressChange = (newProgress) => {
+    const handleProgressChange = async (newProgress) => {
         const now = new Date();
-
         if (newProgress === 1 && !bookProgress.started_dt) {
             setStartedUpdate(now);
         } else if (newProgress === 2 && !bookProgress.finished_dt) {
@@ -103,24 +113,42 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
     };
 
     const onEdit = () => {
-        onSave(null, bookProgress, null);
+        if (lastReadUpdate) {
+            setBookProgress({ ...bookProgress, last_read_dt: lastReadUpdate });
+        }
         setIsEditing(true);
+    };
+
+    const handleBookClick = () => {
+        if (lastReadUpdate) {setBookProgress({ ...bookProgress, last_read_dt: lastReadUpdate });}
+        setSelectedBook(null);
     };
 
     if (!book || !bookProgress || !selectedBook) {
         return null;
     }
 
-    return (
-        <div className={styles.bookDetailsContainer}>
-            {/* <div className={styles.bookDetailsLeft}>
+    if (isEditing) {
+        return (
+            <BookEditor
+                book={book}
+                cover={cover}
+                bookProgress={bookProgress}
+                onSave={onSave}
+                setIsEditing={setIsEditing}
+            />
+        );
+    } else {
+        return (
+            <div className={styles.bookDetailsContainer}>
+            <div className={styles.bookDetailsLeft}>
                 <img
                     src={cover.cover_fname}
                     alt={`${book.title} cover`}
                     className={styles.bookCoverImage}
                     onClick={handleBookClick}
-                />
-            </div> */}
+                    />
+            </div>
             <div className={styles.bookDetailsRight}>
                 <h2>{book?.title}</h2>
                 <p><strong>Author:</strong> {book?.author}</p>
@@ -130,17 +158,17 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
                     <h3>Progress</h3>
                     {((!bookProgress.started_dt && !startedUpdate)
                         && (!bookProgress.finished_dt && !finishedUpdate)) && (
-                        <div>
+                            <div>
                             <button
                                 className={styles.startButton}
-                                onClick={() => handleProgressChange(1)}
-                            >
+                                onClick={async () => await handleProgressChange(1)}
+                                >
                                 Start
                             </button>
                             <button
                                 className={styles.finishButton}
-                                onClick={() => handleProgressChange(2)}
-                            >
+                                onClick={async () => await handleProgressChange(2)}
+                                >
                                 Finished
                             </button>
                         </div>
@@ -148,8 +176,8 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
                     {((bookProgress.started_dt || startedUpdate)
                         && (!bookProgress.finished_dt && !finishedUpdate)) && (
                         <button
-                            className={styles.finishButton}
-                            onClick={() => handleProgressChange(2)}
+                        className={styles.finishButton}
+                        onClick={async () => await handleProgressChange(2)}
                         >
                             Finished
                         </button>
@@ -161,13 +189,13 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
                         className={lastReadUpdate ? styles.notReadTodayButton : styles.readTodayButton}>
                         {lastReadUpdate ? 'I didn\'t read it!' : 'I read this today!'}
                     </button>
-                    <p><strong>Last Read:</strong> {(lastReadUpdate ? lastReadUpdate : bookProgress.last_read_dt) ? format(new Date(bookProgress.last_read_dt), 'yyyy-MM-dd') : 'Never'}</p>
+                    <p><strong>Last Read:</strong> {lastReadUpdate ? format(lastReadUpdate, 'yyyy-MM-dd') : 'Never'}</p>
                 </div>
                 {(startedUpdate || finishedUpdate ) && (
                     <button onClick={() => {
-                        if (startedUpdate) setBookProgress({ ...bookProgress, started: startedUpdate });
-                        if (finishedUpdate) setBookProgress({ ...bookProgress, finished: finishedUpdate });
-                        onSave(null, bookProgress, null);
+                        if (startedUpdate) setBookProgress({ ...bookProgress, started_dt: startedUpdate });
+                        if (finishedUpdate) setBookProgress({ ...bookProgress, finished_dt: finishedUpdate });
+                        if (lastReadUpdate) setBookProgress({ ...bookProgress, last_read_dt: lastReadUpdate });
                     }} className={styles.saveButton}>
                         Save
                     </button>
@@ -178,6 +206,7 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
             </div>
         </div>
     );
+    }
 };
 
 export default BookDetails;

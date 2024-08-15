@@ -50,6 +50,22 @@ export const createBook = async () => {
     return response.data; // this will be a view over all book details
 }
 
+export const setBook = async (bookData) => {
+    const response = await axios.post(`${API_BASE_URL}/books/set`, bookData);
+    return response.data;
+}
+
+export const setBookCover = async (coverData) => {
+    const response = await axios.post(`${API_BASE_URL}/books/covers/set`, coverData);
+    return response.data;
+}
+
+export const setBookProgress = async (progressData) => {
+    console.log(`progress data: ${JSON.stringify(progressData)}`);
+    const response = await axios.post(`${API_BASE_URL}/books/progress/set`, progressData);
+    return response.data;
+}
+
 {/* 
     API endpoints we want to implement:
             .route("/books/create", web::post().to(bookshelf::set_book))

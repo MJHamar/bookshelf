@@ -1,22 +1,34 @@
 import React, { useState } from 'react';
 import styles from '../../styles/BookEditor.module.css';
+import { set } from 'date-fns';
 
-const BookEditor = ({ book, cover, onSave, onClose }) => {
+const BookEditor = ({
+    book,
+    cover,
+    bookProgress,
+    onSave,
+    setIsEditing
+}) => {
     const [title, setTitle] = useState(book?.title || '');
     const [author, setAuthor] = useState(book?.author || '');
     const [isbn, setIsbn] = useState(book?.isbn || '');
     const [description, setDescription] = useState(book?.description || '');
-    const [coverImage, setCoverImage] = useState(cover?.cover_fname || '');
-    const [spineImage, setSpineImage] = useState(cover?.spine_fname || '');
     const [bookHeight, setBookHeight] = useState(cover?.book_height || '');
     const [bookWidth, setBookWidth] = useState(cover?.book_width || '');
     const [spineWidth, setSpineWidth] = useState(cover?.spine_width || '');
+    const [coverImage, setCoverImage] = useState(null);
+    const [spineImage, setSpineImage] = useState(null);
 
     const handleCoverImageUpload = (e) => {
         const file = e.target.files[0];
         const newCoverImage = `/public/${file.name}`;
         setCoverImage(newCoverImage);
         // Here you'd handle uploading the file to the public folder
+        let reader = new FileReader();
+        reader.onload = (e) => {
+            setSpineImage(e.target.result);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSpineImageUpload = (e) => {
@@ -24,10 +36,32 @@ const BookEditor = ({ book, cover, onSave, onClose }) => {
         const newSpineImage = `/public/${file.name}`;
         setSpineImage(newSpineImage);
         // Here you'd handle uploading the file to the public folder
+        let reader = new FileReader();
+        reader.onload = (e) => {
+            setSpineImage(e.target.result);
+        };
+        reader.readAsDataURL(file);
     };
+
+    const onClose = () => {
+        setIsEditing(false);
+    }
 
     return (
         <div className={styles.editorOverlay}>
+            <div className={styles.bookDetailsLeft}>
+                {(cover.cover_fname) ? <img
+                    src={cover.cover_fname}
+                    alt={`${book.title} cover`}
+                    className={styles.bookCoverImage}
+                /> : <svg>
+                        <rect
+                            height={cover.book_height}
+                            width={cover.book_width}
+                            color="lightblue" />
+                    </svg>
+                }
+            </div>
             <div className={styles.editorContainer}>
                 <h2>{book ? 'Edit Book' : 'Add New Book'}</h2>
                 <label>
@@ -112,15 +146,13 @@ const BookEditor = ({ book, cover, onSave, onClose }) => {
                 </label>
                 <div className={styles.buttonContainer}>
                     <button onClick={() => onSave({
-                        title,
-                        author,
-                        isbn,
-                        description,
-                        coverImage,
-                        spineImage,
-                        bookHeight,
-                        bookWidth,
-                        spineWidth
+                        book: {
+                            title, author, isbn, description
+                        },
+                        cover: {
+                            coverImage, spineImage, bookHeight, bookWidth, spineWidth
+                        },
+                        progress: bookProgress
                     })} className={styles.saveButton}>
                         Save
                     </button>

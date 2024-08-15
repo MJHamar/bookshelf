@@ -88,7 +88,10 @@ const Bookshelf = (
         fetchLayoutSVG();
     }, [layoutData]);
 
-    const handleSaveBook = (book, cover, progress) => {
+    const handleSaveBook = ({book, cover, progress}) => {
+        console.log(`book: ${JSON.stringify(book)}`);
+        console.log(`cover: ${JSON.stringify(cover)}`);
+        console.log(`progress: ${JSON.stringify(progress)}`);
         // saves the book through the API and closes the editor.
         if (book) {
             setBook(book);
@@ -138,20 +141,15 @@ const Bookshelf = (
             </TransformWrapper>
         </div>
         <div style={{ position: "absolute", zIndex: 10 }}>
-            { (selectedBook && !isEditing) && <BookDetails
-                    selectedBook={selectedBook}
-                    setSelectedBook={setSelectedBook}
-                    setIsEditing={setIsEditing}
-                    onSave={handleSaveBook}
-                /> || (selectedBook && isEditing) && <BookEditor
+            {(selectedBook) &&
+                <BookDetails
                     selectedBook={selectedBook}
                     setSelectedBook={setSelectedBook}
                     isEditing={isEditing}
                     setIsEditing={setIsEditing}
                     onSave={handleSaveBook}
-                    onClose={handleCloseEditor}
                 /> || null
-                }
+            }
         </div>
         </>
     );
