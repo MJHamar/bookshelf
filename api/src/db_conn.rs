@@ -62,7 +62,6 @@ pub struct Book {
     pub id: String,
     pub title: Option<String>,
     pub author: Option<String>,
-    pub isbn: Option<String>,
     pub description: Option<String>,
 }
 
@@ -82,7 +81,6 @@ pub struct BookCover {
     pub spine_width: Number, // defaults to 50
 }
 
-
 #[derive(Serialize, Deserialize)]
 pub struct BookProgress {
     pub book_id: String,
@@ -91,7 +89,7 @@ pub struct BookProgress {
     pub last_read_dt: Option<DateTime<Utc>>
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct BookView {
     pub book: Book,
     pub cover: BookCover,
@@ -168,3 +166,4 @@ pub async fn _set_book_progress(redis: &mut redis::aio::MultiplexedConnection, p
                     .expect("Failed to set book progress");
     Ok(())
 }
+

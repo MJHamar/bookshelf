@@ -244,7 +244,6 @@ pub async fn create_book() -> impl Responder {
         id: Uuid::new_v4().to_string(),
         title: None,
         author: None,
-        isbn: None,
         description: None,
     };
     let book_cover = BookCover {
@@ -263,15 +262,14 @@ pub async fn create_book() -> impl Responder {
     };
 
     // NOTE: We DO NOT COMMIT to the DB HERE
+    let view = BookView {
+        book: book,
+        cover: book_cover,
+        progress: book_progress,
+    };
+    info!("Created book: {}", serde_json::to_string(&view).expect("Failed to serialize book view"));
 
-    HttpResponse::Ok().json({
-        let view = BookView {
-            book: book,
-            cover: book_cover,
-            progress: book_progress,
-        };
-        view
-    })
+    HttpResponse::Ok().json(view)
 
 }
 

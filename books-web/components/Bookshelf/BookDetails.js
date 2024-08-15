@@ -3,6 +3,7 @@ import { getBooks, getBookProgress } from '../../utils/api';
 import BookEditor from './BookEditor';
 import { format, set } from 'date-fns';
 import styles from '../../styles/BookDetails.module.css';
+import { downloadFile } from '../../utils/data_handler';
 
 const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, onSave }) => {
 
@@ -14,6 +15,7 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
     const [startedUpdate, setStartedUpdate] = useState(null);
     const [finishedUpdate, setFinishedUpdate] = useState(null);
     const [lastReadUpdate, setLastReadUpdate] = useState(null);
+    const [coverImageURL, setCoverImageURL] = useState(null);
     // other updates are handled directly in the three structures' state
 
     // get information about the selected book
@@ -46,6 +48,14 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
             setCover(selectedBook?.cover);
         };
     }, [selectedBook]);
+
+    useEffect(() => {
+        console.log(`cover: ${JSON.stringify(cover)}, getting cover image`);
+        if (cover?.cover_fname) downloadFile({
+            uuid: cover.cover_fname,
+            setFileData: setCoverImageURL
+        });
+    }, [cover]);
 
     // load additional information about the book
     useEffect(() => {
@@ -143,7 +153,7 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
             <div className={styles.bookDetailsContainer}>
             <div className={styles.bookDetailsLeft}>
                 <img
-                    src={cover.cover_fname}
+                    src={coverImageURL}
                     alt={`${book.title} cover`}
                     className={styles.bookCoverImage}
                     onClick={handleBookClick}
@@ -152,7 +162,6 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
             <div className={styles.bookDetailsRight}>
                 <h2>{book?.title}</h2>
                 <p><strong>Author:</strong> {book?.author}</p>
-                <p><strong>ISBN:</strong> {book?.isbn}</p>
                 <p><strong>Description:</strong> {book?.description}</p>
                 <div className={styles.progressSection}>
                     <h3>Progress</h3>

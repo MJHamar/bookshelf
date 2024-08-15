@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styles from '../../styles/BookEditor.module.css';
 import { set } from 'date-fns';
+import { uploadFile, downloadFile, deleteFile } from '../../utils/data_handler';
 
 const BookEditor = ({
     book,
@@ -9,57 +10,112 @@ const BookEditor = ({
     onSave,
     setIsEditing
 }) => {
-    const [title, setTitle] = useState(book?.title || '');
-    const [author, setAuthor] = useState(book?.author || '');
-    const [isbn, setIsbn] = useState(book?.isbn || '');
-    const [description, setDescription] = useState(book?.description || '');
-    const [bookHeight, setBookHeight] = useState(cover?.book_height || '');
-    const [bookWidth, setBookWidth] = useState(cover?.book_width || '');
-    const [spineWidth, setSpineWidth] = useState(cover?.spine_width || '');
+    const bookChangeRef = useRef({});
+    const coverChangeRef = useRef({});
+    const progressChangeRef = useRef({});
     const [coverImage, setCoverImage] = useState(null);
     const [spineImage, setSpineImage] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const [coverImageURL, setCoverImageURL] = useState(null);
+    const [spineImageURL, setSpineImageURL] = useState(null);
+
+    useEffect(() => {
+        if (cover?.cover_fname) {
+            downloadFile({
+                uuid: cover.cover_fname,
+                setFileData: setCoverImageURL
+            });
+        }
+        if (cover?.spine_fname) {
+            downloadFile({
+                uuid: cover.spine_fname,
+                setFileData: setSpineImageURL
+            });
+        }
+    }, [cover]);
+
+    useEffect(() => { // upload cover image to the server and get the file id
+        console.log(`coverImage: ${coverImage}`);
+        if (!coverImage) {
+            return;
+        }
+        uploadFile({
+            file: coverImage,
+            setUuid: (id) => {
+                coverChangeRef.current = { ...coverChangeRef.current, cover_fname: id };
+            },
+            setUploading: setIsUploading
+        });
+        setCoverImageURL(URL.createObjectURL(coverImage));
+
+    }, [coverImage]);
+
+    useEffect(() => { // upload spine image to the server and get the file id
+        console.log(`spineImage: ${spineImage}`);
+        if (!spineImage) {
+            return;
+        }
+        uploadFile({
+            file: spineImage,
+            setUuid: (id) => {
+                coverChangeRef.current = { ...coverChangeRef.current, spine_fname: id };
+            },
+            setUploading: setIsUploading
+        });
+        setSpineImageURL(URL.createObjectURL(spineImage));
+
+    }, [spineImage]);
 
     const handleCoverImageUpload = (e) => {
+        console.log('handling cover image upload');
         const file = e.target.files[0];
-        const newCoverImage = `/public/${file.name}`;
-        setCoverImage(newCoverImage);
-        // Here you'd handle uploading the file to the public folder
-        let reader = new FileReader();
-        reader.onload = (e) => {
-            setSpineImage(e.target.result);
-        };
-        reader.readAsDataURL(file);
+        setCoverImage(file);
     };
 
     const handleSpineImageUpload = (e) => {
+        console.log('handling spine image upload');
         const file = e.target.files[0];
-        const newSpineImage = `/public/${file.name}`;
-        setSpineImage(newSpineImage);
-        // Here you'd handle uploading the file to the public folder
-        let reader = new FileReader();
-        reader.onload = (e) => {
-            setSpineImage(e.target.result);
-        };
-        reader.readAsDataURL(file);
+        setSpineImage(file);
     };
 
     const onClose = () => {
+        if (coverChangeRef.current.cover_fname) {
+            deleteFile(coverChangeRef.current.cover_fname);
+        }
+        if (coverChangeRef.current.spine_fname) {
+            deleteFile(coverChangeRef.current.spine_fname);
+        }
         setIsEditing(false);
-    }
+    };
+
+    const handleSave = () => {
+        // override the book, cover, and progress with the new values, if any
+        const newBook = { ...book, ...bookChangeRef.current };
+        const newCover = { ...cover, ...coverChangeRef.current };
+        const newProgress = { ...bookProgress, ...progressChangeRef.current };
+        console.log(`saving book: ${JSON.stringify(newBook)}`);
+        console.log(`saving cover: ${JSON.stringify(newCover)}`);
+        console.log(`saving progress: ${JSON.stringify(newProgress)}`);
+        onSave({ book: newBook, cover: newCover, progress: newProgress });
+    };
 
     return (
         <div className={styles.editorOverlay}>
             <div className={styles.bookDetailsLeft}>
-                {(cover.cover_fname) ? <img
-                    src={cover.cover_fname}
+                {(cover.cover_fname || coverChangeRef.current.cover_fname) ?
+                    <img
+                    src={coverImageURL}
                     alt={`${book.title} cover`}
                     className={styles.bookCoverImage}
-                /> : <svg>
+                /> : <div alt={`${book.title} cover`}
+                        className={styles.bookCoverImage}
+                    ><svg>
                         <rect
                             height={cover.book_height}
                             width={cover.book_width}
                             color="lightblue" />
-                    </svg>
+                    </svg></div>
                 }
             </div>
             <div className={styles.editorContainer}>
@@ -68,8 +124,14 @@ const BookEditor = ({
                     Title:
                     <input
                         type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
+                        value={
+                            book?.title || ''
+                        }
+                        onChange={(e) =>
+                            bookChangeRef.current = {
+                                ...bookChangeRef.current,
+                                title: e.target.value
+                            }}
                         className={styles.inputField}
                     />
                 </label>
@@ -77,25 +139,28 @@ const BookEditor = ({
                     Author:
                     <input
                         type="text"
-                        value={author}
-                        onChange={(e) => setAuthor(e.target.value)}
-                        className={styles.inputField}
-                    />
-                </label>
-                <label>
-                    ISBN:
-                    <input
-                        type="text"
-                        value={isbn}
-                        onChange={(e) => setIsbn(e.target.value)}
+                        value={
+                            book?.author || ''
+                        }
+                        onChange={(e) =>
+                            bookChangeRef.current = {
+                                ...bookChangeRef.current,
+                                author: e.target.value
+                            }}
                         className={styles.inputField}
                     />
                 </label>
                 <label>
                     Description:
                     <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                        value={
+                            book?.description || ''
+                        }
+                        onChange={(e) =>
+                            bookChangeRef.current = {
+                                ...bookChangeRef.current,
+                                description: e.target.value
+                            }}
                         className={styles.textArea}
                     />
                 </label>
@@ -106,7 +171,7 @@ const BookEditor = ({
                         onChange={handleCoverImageUpload}
                         className={styles.inputField}
                     />
-                    {coverImage && <img src={coverImage} alt="Cover" className={styles.previewImage} />}
+                    {coverImageURL && <img src={coverImageURL} alt="Cover" className={styles.previewImage} />}
                 </label>
                 <label>
                     Spine Image:
@@ -115,14 +180,20 @@ const BookEditor = ({
                         onChange={handleSpineImageUpload}
                         className={styles.inputField}
                     />
-                    {spineImage && <img src={spineImage} alt="Spine" className={styles.previewImage} />}
+                    {spineImageURL && <img src={spineImageURL} alt="Spine" className={styles.previewImage} />}
                 </label>
                 <label>
                     Book Height:
                     <input
                         type="number"
-                        value={bookHeight}
-                        onChange={(e) => setBookHeight(e.target.value)}
+                        value={
+                            cover?.book_height || ''
+                        }
+                        onChange={(e) => 
+                            coverChangeRef.current = {
+                                ...coverChangeRef.current,
+                                book_height: e.target.value
+                            }}
                         className={styles.inputField}
                     />
                 </label>
@@ -130,8 +201,14 @@ const BookEditor = ({
                     Book Width:
                     <input
                         type="number"
-                        value={bookWidth}
-                        onChange={(e) => setBookWidth(e.target.value)}
+                        value={
+                            cover?.book_width ||  ''
+                        }
+                        onChange={(e) =>
+                            coverChangeRef.current = {
+                                ...coverChangeRef.current,
+                                book_width: e.target.value
+                            }}
                         className={styles.inputField}
                     />
                 </label>
@@ -139,21 +216,23 @@ const BookEditor = ({
                     Spine Width:
                     <input
                         type="number"
-                        value={spineWidth}
-                        onChange={(e) => setSpineWidth(e.target.value)}
+                        value={
+                            cover?.spine_width || ''
+                        }
+                        onChange={(e) =>
+                            coverChangeRef.current = {
+                                ...coverChangeRef.current,
+                                spine_width: e.target.value
+                            }}
                         className={styles.inputField}
                     />
                 </label>
                 <div className={styles.buttonContainer}>
-                    <button onClick={() => onSave({
-                        book: {
-                            title, author, isbn, description
-                        },
-                        cover: {
-                            coverImage, spineImage, bookHeight, bookWidth, spineWidth
-                        },
-                        progress: bookProgress
-                    })} className={styles.saveButton}>
+                    <button
+                        onClick={handleSave}
+                        className={styles.saveButton}
+                        active={coverImage && spineImage}
+                    >
                         Save
                     </button>
                     <button onClick={onClose} className={styles.cancelButton}>

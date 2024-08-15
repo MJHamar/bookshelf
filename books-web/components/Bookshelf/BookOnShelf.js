@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { getBooks, getBookProgress } from '../../utils/api';
+import { downloadFile } from '../../utils/data_handler';
 
 const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
 
     const [spineWidth, setSpineWidth] = useState(cover.spineWidth);
     const [spineHeight, setSpineHeight] = useState(cover.bookHeight);
+    const [spineImageURL, setSpineImageURL] = useState(null);
 
     // when initialised, calculate maximum height of the book and
     // resize the book to fit the shelf, maintaining aspect ratio
@@ -14,18 +16,22 @@ const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
             const shelfWidth = cover.shelf_width;
             const shelfHeight = cover.shelf_height;
 
-            if (spineHeight > shelfHeight) {
-                const aspectRatio = spineWidth / spineHeight;
-                const newHeight = shelfWidth / aspectRatio;
-
-                const newWidth = shelfHeight * aspectRatio;
-                setSpineWidth(newWidth);
-                setSpineHeight(newHeight);
-                console.log(`spineWidth: ${newWidth}, spineHeight: ${newHeight}`);
-            }
+            const aspectRatio = spineWidth / spineHeight;
+            const newHeight = shelfHeight < spineHeight ? shelfHeight : spineHeight;
+            const newWidth = newHeight * aspectRatio;
+            setSpineWidth(newWidth);
+            setSpineHeight(newHeight);
+            console.log(`spineWidth: ${newWidth}, spineHeight: ${newHeight}`);
         };
         setRelativeSize();
     }, []);
+
+    useEffect(() => {
+        if (cover?.spine_fname) downloadFile({
+            uuid: cover.spine_fname,
+            setFileData: setSpineImageURL
+        });
+    }, [cover]);
 
     const handleClick = () => {
         if (selectedBook?.cover?.book_id === cover.book_id) {
@@ -37,6 +43,10 @@ const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
         console.log(`cover: ${ JSON.stringify(cover) }`);
         setSelectedBook({ cover: cover });
     };
+
+    if (selectedBook?.cover?.book_id === cover.book_id) {
+        return;
+    }
 
     return (
         <div
@@ -50,7 +60,7 @@ const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
             }}
         >
             <div style={{ flex: 1 }}>
-                <img src={cover.spine_fname} alt={`spine`} style={{ height: '100%' }} />
+                <img src={spineImageURL} alt={`spine`} style={{ height: '100%' }} />
             </div>
         </div>
     );

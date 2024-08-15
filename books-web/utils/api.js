@@ -66,11 +66,22 @@ export const setBookProgress = async (progressData) => {
     return response.data;
 }
 
-{/* 
-    API endpoints we want to implement:
-            .route("/books/create", web::post().to(bookshelf::set_book))
-            .route("/books/covers/set", web::post().to(bookshelf::set_book_cover))
-            .route("/books/progress/set", web::post().to(bookshelf::set_book_progress))
-            .route("/books/decoration_slots/set", web::post().to(bookshelf::set_decoration_slot))
-            .route("/books/decoration/set", web::post().to(bookshelf::set_decoration))
-    */}
+export const setDecorationSlot = async (slotData) => {
+    const response = await axios.post(`${API_BASE_URL}/books/decoration_slots/set`, slotData);
+    return response.data;
+}
+
+export const setDecoration = async (decorationData) => {
+    const response = await axios.post(`${API_BASE_URL}/books/decoration/set`, decorationData);
+    return response.data;
+}
+
+export const getData = async (id) => {
+    const response = await axios.get(`${API_BASE_URL}/data/${id}`);
+    return response.data;
+}
+
+export const setData = async (data) => { 
+    const response = await axios.post(`${API_BASE_URL}/data`, data);
+    return response.data;
+}

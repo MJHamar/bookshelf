@@ -5,6 +5,7 @@ use log::{info, debug, error};
 use crate::db_conn;
 use crate::bookshelf;
 use crate::util::settings::load_config;
+use crate::data_handler;
 
 async fn index() -> impl Responder {
     "Hello! This is the habit tracker backend. You should leave..."
@@ -50,6 +51,9 @@ pub async fn serve() -> std::io::Result<()> {
             .route("/books/progress/set", web::post().to(bookshelf::set_book_progress))
             .route("/books/decoration_slots/set", web::post().to(bookshelf::set_decoration_slot))
             .route("/books/decoration/set", web::post().to(bookshelf::set_decoration))
+            .route("/data/{id}", web::get().to(data_handler::get_data))
+            .route("/data", web::post().to(data_handler::set_data))
+            .route("/data/{id}", web::delete().to(data_handler::delete_data))
     })
     .bind(server_url)?
     .run()

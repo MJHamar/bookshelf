@@ -6,14 +6,15 @@ const Home = () => {
     const [selectedBook, setSelectedBook] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
 
-    const handleAddBook = () => {
+    const handleAddBook = async () => {
         // creates a new book through the API and opens an editor.
-        let bookView = createBook();
+        let bookView = await createBook();
+        console.log(`bookView: ${JSON.stringify(bookView)}`);
         let book = bookView.book;
         let cover = bookView.cover;
         let progress = bookView.progress;
+        await setIsEditing(true);
         setSelectedBook({ book: book, cover: cover, progress: progress });
-        setIsEditing(true);
     };
 
     return (
