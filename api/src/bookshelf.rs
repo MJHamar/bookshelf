@@ -4,11 +4,15 @@ use actix_web::Responder;
 use actix_web::{web, HttpResponse};
 use redis::AsyncCommands;
 use crate::db_conn::{Layout, //CurrentLayout,
-                    Shelf, Book2Shelf, BookIdList, Book, BookCover, BookProgress, DefaultResponse,
+                    Shelf, Book2Shelf, BookIdList,
+                    Book, BookCover, BookProgress, BookView,
+                    DefaultResponse,
                     DecorationSlot, Decoration, DecorationIdList,
+                    _set_book, _set_book_cover, _set_book_progress,
                     LAYOUT_KEY, CURRENT_LAYOUT_KEY,
                     SHELF_KEY, BOOK2SHELF_KEY, BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
-                    DECORATION_SLOT_KEY, DECORATION_KEY};
+                    DECORATION_SLOT_KEY, DECORATION_KEY,
+                    DEFAULT_BOOK_HEIGHT, DEFAULT_BOOK_WIDTH, DEFAULT_SPINE_WIDTH};
 use uuid::Uuid;
 
 async fn _get_layout_by_id(layout_id: &str, conn: &mut redis::aio::MultiplexedConnection) -> Option<Layout> {
@@ -235,37 +239,56 @@ pub async fn get_decorations(dec_ids: web::Json<DecorationIdList>, conn: web::Da
     HttpResponse::Ok().json(decorations)
 }
 
+pub async fn create_book(conn: web::Data<redis::Client>) -> impl Responder {
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let book = Book {
+        id: Uuid::new_v4().to_string(),
+        title: None,
+        author: None,
+        isbn: None,
+        description: None,
+    };
+    let book_cover = BookCover {
+        book_id: book.id.clone(),
+        cover_fname: None,
+        spine_fname: None,
+        book_height: DEFAULT_BOOK_HEIGHT.into(),
+        book_width: DEFAULT_BOOK_WIDTH.into(),
+        spine_width: DEFAULT_SPINE_WIDTH.into(),
+    };
+    let book_progress = BookProgress {
+        book_id: book.id.clone(),
+        progress: 0.into(),
+        started_dt: None,
+        finished_dt: None,
+        last_read_dt: None,
+    };
+
+    // NOTE: We DO NOT COMMIT to the DB HERE
+
+    HttpResponse::Ok().json({
+        let view = BookView {
+            book: book,
+            cover: book_cover,
+            progress: book_progress,
+        };
+        view
+    })
+
+}
+
 pub async fn set_book(conn: web::Data<redis::Client>, book: web::Json<Book>) -> impl Responder {
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     // check if book already exists
     // i.e. if book.id is not None and book.id is in the BOOK_KEY
     let book = book.into_inner();
-    if book.id != "" {
-        let book_id: String = book.id.clone();
-        let book_str: Option<String>  = con.hget(&BOOK_KEY, book_id.clone()).await.expect("Failed to read book");
-        if book_str.is_some() {
-        // Update the book
-        let book_str: String = serde_json::to_string(&book).expect("Failed to serialize book");
-        let _: () = con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
-        return HttpResponse::Ok().json(DefaultResponse::default());
-    } else {
-            // create new book
-            let new_book = Book {
-                id: Uuid::new_v4().to_string(),
-                title: book.title,
-                author: book.author,
-                isbn: book.isbn,
-                description: book.description,
-            };
-            let book_str = serde_json::to_string(&new_book).expect("Failed to serialize book");
-            let _: () = con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
-            return HttpResponse::Ok().json(DefaultResponse::default())
+    let _ = match _set_book(&mut con, &book).await {
+        Ok(_) => (),
+        Err(e) => {
+            error!("Failed to set book: {}", e);
+            return HttpResponse::InternalServerError().json(DefaultResponse::default())
         }
-    }
-    let book_id = book.id.to_string();
-    let book_str = serde_json::to_string(&book).expect("Failed to serialize book");
-
-    let _: () = con.hset(&BOOK_KEY, book_id, book_str).await.expect("Failed to set book");
+    };
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
@@ -273,10 +296,13 @@ pub async fn set_book(conn: web::Data<redis::Client>, book: web::Json<Book>) -> 
 pub async fn set_book_cover(conn: web::Data<redis::Client>, book_cover: web::Json<BookCover>) -> impl Responder {
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     let book_cover = book_cover.into_inner();
-    let book_id: String = book_cover.book_id.to_string();
-    let book_cover_str: String = serde_json::to_string(&book_cover).expect("Failed to serialize book cover");
-
-    let _: () = con.hset(&BOOK_COVER_KEY, book_id, book_cover_str).await.expect("Failed to set book cover");
+    let _ = match _set_book_cover(&mut con, &book_cover).await {
+        Ok(_) => (),
+        Err(e) => {
+            error!("Failed to set book cover: {}", e);
+            return HttpResponse::InternalServerError().json(DefaultResponse::default())
+        }
+    };
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
@@ -284,11 +310,14 @@ pub async fn set_book_cover(conn: web::Data<redis::Client>, book_cover: web::Jso
 pub async fn set_book_progress(conn: web::Data<redis::Client>, book_progress: web::Json<BookProgress>) -> impl Responder {
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     let book_progress = book_progress.into_inner();
-    let book_id = book_progress.book_id.to_string();
-    let book_progress_str: String = serde_json::to_string(&book_progress).expect("Failed to serialize book progress");
-    
-    let _: () = con.hset(&BOOK_PROGRESS_KEY, book_id, &book_progress_str as &str).await.expect("Failed to set book progress");
 
+    let _ = match _set_book_progress(&mut con, &book_progress).await {
+        Ok(_) => (),
+        Err(e) => {
+            error!("Failed to set book: {}", e);
+            return HttpResponse::InternalServerError().json(DefaultResponse::default())
+        }
+    };
     HttpResponse::Ok().json(DefaultResponse::default())
 }
 

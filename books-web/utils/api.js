@@ -45,12 +45,16 @@ export const getDecorations = async (decorationIds) => {
 };
 
 // Add more functions as needed for book creation, updating, etc.
+export const createBook = async () => {
+    const response = await axios.post(`${API_BASE_URL}/books/create`);
+    return response.data; // this will be a view over all book details
+}
 
 {/* 
     API endpoints we want to implement:
             .route("/books/create", web::post().to(bookshelf::set_book))
-            .route("/books/covers/create", web::post().to(bookshelf::set_book_cover))
-            .route("/books/progress/create", web::post().to(bookshelf::set_book_progress))
-            .route("/books/decoration_slots/create", web::post().to(bookshelf::set_decoration_slot))
-            .route("/books/decoration/create", web::post().to(bookshelf::set_decoration))
+            .route("/books/covers/set", web::post().to(bookshelf::set_book_cover))
+            .route("/books/progress/set", web::post().to(bookshelf::set_book_progress))
+            .route("/books/decoration_slots/set", web::post().to(bookshelf::set_decoration_slot))
+            .route("/books/decoration/set", web::post().to(bookshelf::set_decoration))
     */}

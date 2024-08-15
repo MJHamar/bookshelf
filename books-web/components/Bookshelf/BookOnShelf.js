@@ -28,7 +28,11 @@ const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
     }, []);
 
     const handleClick = () => {
-        setSelectedBook({book_id: cover.book_id, cover: cover});
+        if (selectedBook?.cover?.book_id === cover.book_id) {
+            setSelectedBook(null);
+            return;
+        }
+        setSelectedBook({ cover: cover });
     };
 
     return (

@@ -6,10 +6,16 @@ import BookDetails from './BookDetails';
 import {
     getCurrentLayout, getShelves,
     getBooks, getB2SMapping, getBookCovers, getBookProgress,
-    getDecorations, getDecorationSlots
+    getDecorations, getDecorationSlots,
+    createBook,
+    setBook, setBookCover, setBookProgress
 } from '../../utils/api';
+import BookEditor from './BookEditor';
 
-const Bookshelf = () => {
+const Bookshelf = (
+    selectedBook, setSelectedBook,
+    isEditing, setIsEditing
+) => {
 
     const [layoutData, setLayoutData] = useState(null);
     const [layout, setLayout] = useState(null);
@@ -17,8 +23,6 @@ const Bookshelf = () => {
     const [b2s_map, setB2SMap] = useState([]);
     const [decoration_slots, setDecorationSlots] = useState([]);
     const [decorations, setDecorations] = useState([]);
-
-    const [selectedBook, setSelectedBook] = useState(null);
 
     // obtain Layout data upon startup
     useEffect(() => {
@@ -84,13 +88,35 @@ const Bookshelf = () => {
         fetchLayoutSVG();
     }, [layoutData]);
 
+    const handleSaveBook = (book, cover, progress) => {
+        // saves the book through the API and closes the editor.
+        if (book) {
+            setBook(book);
+        }
+        if (cover) {
+            setBookCover(cover);
+        }
+        if (progress) {
+            setBookProgress(progress);
+        }
+        setIsEditing(false);
+    }
+
+    const handleCloseEditor = () => {
+        // closes the editor without saving.
+        setIsEditing(false);
+    }
     if (!layout || !layoutData) {
         return <div>Loading...</div>;
     }
 
     return (
-        <div style={{ position: 'relative', width: layoutData.width, height: layoutData.height }}>
-            <TransformWrapper style={{ zIndex: "1", height: "100%", width: "100%" }}>
+        <>
+            <div style={{
+                position: 'absolute', width: layoutData.width, height: layoutData.height,
+                zIndex: 1
+            }}>
+            <TransformWrapper style={{ height: "100%", width: "100%" }}>
                 <TransformComponent>
                     <div
                         className="layout"
@@ -109,11 +135,24 @@ const Bookshelf = () => {
                     ))}
                 </TransformComponent>
             </TransformWrapper>
-            <BookDetails
-                selectedBook={selectedBook}
-                setSelectedBook={setSelectedBook}
-            />
         </div>
+        <div style={{ position: "absolute", zIndex: 10 }}>
+            { (selectedBook && !isEditing) && <BookDetails
+                    selectedBook={selectedBook}
+                    setSelectedBook={setSelectedBook}
+                    setIsEditing={setIsEditing}
+                    onSave={handleSaveBook}
+                /> || (selectedBook && isEditing) && <BookEditor
+                    selectedBook={selectedBook}
+                    setSelectedBook={setSelectedBook}
+                    isEditing={isEditing}
+                    setIsEditing={setIsEditing}
+                    onSave={handleSaveBook}
+                    onClose={handleCloseEditor}
+                /> || null
+                }
+        </div>
+        </>
     );
 };
 

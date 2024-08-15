@@ -16,6 +16,12 @@ pub const BOOK_PROGRESS_KEY: &str = "book_progress";
 pub const DECORATION_SLOT_KEY: &str = "decoration_slots";
 pub const DECORATION_KEY: &str = "decorations";
 
+// DEFAULTS
+pub const DEFAULT_BOOK_HEIGHT: i32 = 200;
+pub const DEFAULT_BOOK_WIDTH: i32 = 150;
+pub const DEFAULT_SPINE_WIDTH: i32 = 50;
+
+
 // a dictionary with a single key-value pair: "status": "ok"
 #[derive(Serialize, Deserialize)]
 pub struct DefaultResponse {
@@ -54,10 +60,10 @@ pub struct BookIdList {
 #[derive(Serialize, Deserialize)]
 pub struct Book {
     pub id: String,
-    pub title: String,
-    pub author: String,
-    pub isbn: String,
-    pub description: String,
+    pub title: Option<String>,
+    pub author: Option<String>,
+    pub isbn: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -69,11 +75,11 @@ pub struct Book2Shelf {
 #[derive(Serialize, Deserialize)]
 pub struct BookCover {
     pub book_id: String,
-    pub cover_fname: String,
-    pub spine_fname: String,
-    pub book_height: Number,
-    pub book_width: Number,
-    pub spine_width: Number,
+    pub cover_fname: Option<String>,
+    pub spine_fname: Option<String>,
+    pub book_height: Number, // defaults to 200
+    pub book_width: Number,  // defaults to 150
+    pub spine_width: Number, // defaults to 50
 }
 
 #[derive(Serialize, Deserialize)]
@@ -83,6 +89,13 @@ pub struct BookProgress {
     pub started_dt: Option<DateTime<Utc>>,
     pub finished_dt: Option<DateTime<Utc>>,
     pub last_read_dt: Option<DateTime<Utc>>
+}
+
+#[derive(Serialize)]
+pub struct BookView {
+    pub book: Book,
+    pub cover: BookCover,
+    pub progress: BookProgress
 }
 
 #[derive(Serialize, Deserialize)]
@@ -125,5 +138,33 @@ pub async fn test_redis(params: String) -> redis::RedisResult<()> {
 
     debug!("Redis test OK");
 
+    Ok(())
+}
+
+pub async fn _set_book(redis: &mut redis::aio::MultiplexedConnection, book: &Book) -> redis::RedisResult<()> {
+    let book_json = serde_json::to_string(&book)
+                    .expect("Failed to serialize book");
+    let _: () = redis.hset(BOOK_KEY, book.id.clone(), book_json)
+                    .await
+                    .expect("Failed to set book cover");
+    Ok(())
+}
+
+pub async fn _set_book_cover(redis: &mut redis::aio::MultiplexedConnection, cover: &BookCover) -> redis::RedisResult<()> {
+    let cover_json = serde_json::to_string(&cover)
+                    .expect("Failed to serialize book cover");
+    let book_id = cover.book_id.clone();
+    let _: () = redis.hset(BOOK_COVER_KEY, book_id, cover_json)
+                    .await
+                    .expect("Failed to set book cover");
+    Ok(())
+}
+
+pub async fn _set_book_progress(redis: &mut redis::aio::MultiplexedConnection, progress: &BookProgress) -> redis::RedisResult<()> {
+    let progress_json = serde_json::to_string(&progress)
+                    .expect("Failed to serialize book progress");
+    let _: () = redis.hset(BOOK_PROGRESS_KEY, progress.book_id.clone(), progress_json)
+                    .await
+                    .expect("Failed to set book progress");
     Ok(())
 }
