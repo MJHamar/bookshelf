@@ -1,16 +1,15 @@
 /* components/Bookshelf/BookEditor.module.css */
 
 .editorOverlay {
-    position: fixed;
+    position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
+    left: 50vw;
+    width: 50vw;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
+    /* background-color: rgba(0, 0, 0, 0.5); */
+    /* display: flex; */
     justify-content: center;
     align-items: center;
-    overflow: auto; /* Add this line to enable scrollbar */
 }
 
 .bookDetailsLeft {
@@ -31,12 +30,14 @@
 }
 
 .editorContainer {
-    background-color: #fff;
+    background-color: #fdd;
     padding: 20px;
     width: 400px;
+    height: 90%;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
+    overflow-y: scroll;
 }
 
 .editorContainer h2 {

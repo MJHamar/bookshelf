@@ -117,7 +117,7 @@ const Bookshelf = (
         <>
             <div style={{
                 position: 'absolute', width: layoutData.width, height: layoutData.height,
-                zIndex: 1
+                zIndex: 1, top: 0, left: 0
             }}>
             <TransformWrapper style={{ height: "100%", width: "100%" }}>
                 <TransformComponent>
