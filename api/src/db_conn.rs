@@ -69,7 +69,7 @@ pub struct Book {
 
 #[derive(Serialize, Deserialize)]
 pub struct Book2Shelf {
-    pub book_id: String,
+    pub books: Vec<String>,
     pub shelf_id: Number,
 }
 

@@ -1,15 +1,15 @@
 use actix_multipart::Multipart;
-use actix_web::{web, App, HttpServer, Responder, post, get};
+use actix_web::{web, Responder};
 use futures_util::TryStreamExt as _;
 use log::{debug, error, info};
 use redis::AsyncCommands;
 use uuid::Uuid;
-use std::io::Write;
 
 const DATA_KEY: &str = "data";
 
 async fn save_file(mut payload: Multipart, conn: &mut redis::aio::MultiplexedConnection) -> Result<String, Box<dyn std::error::Error>> {
     let uuid = Uuid::new_v4().to_string();
+    let mut payload_empty = true;
 
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_type = field.content_type().to_string();
@@ -23,13 +23,16 @@ async fn save_file(mut payload: Multipart, conn: &mut redis::aio::MultiplexedCon
             "content_type": content_type,
             "data": base64::encode(&data),
         });
-        info!("Saving file with id: {}, value: {}", uuid, value.to_string());
+        debug!("Saving file with id: {}, value: {}", uuid, value.to_string());
 
         let _ = match conn.hset(&DATA_KEY, &uuid, value.to_string()).await {
             Ok(val) => val,
             Err(e) => {error!("{}", e); return Err(Box::new(e));}
         };
+        payload_empty = false;
         // conn.set_ex(&uuid, value.to_string(), 3600).await?; // Set with expiration of 1 hour
+    } if payload_empty {
+        error!("There was no payload");
     }
     info!("File saved");
     Ok(uuid)

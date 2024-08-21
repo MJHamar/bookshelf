@@ -3,15 +3,14 @@ use log::{debug,warn,info,error};
 use actix_web::Responder;
 use actix_web::{web, HttpResponse};
 use redis::AsyncCommands;
-use serde_json::Number;
 use crate::db_conn::{Layout, //CurrentLayout,
-                    Shelf, Book2Shelf, BookIdList, BookOrder,
+                    Shelf, Book2Shelf, BookIdList,
                     Book, BookCover, BookProgress, BookView,
                     DefaultResponse,
                     DecorationSlot, Decoration, DecorationIdList,
                     _set_book, _set_book_cover, _set_book_progress,
                     LAYOUT_KEY, CURRENT_LAYOUT_KEY,
-                    SHELF_KEY, BOOK2SHELF_KEY, BOOK_ORDER_KEY,
+                    SHELF_KEY, BOOK2SHELF_KEY,
                     BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
                     DECORATION_SLOT_KEY, DECORATION_KEY,
                     DEFAULT_BOOK_HEIGHT, DEFAULT_BOOK_WIDTH, DEFAULT_SPINE_WIDTH};
@@ -142,53 +141,29 @@ pub async fn get_book2shelf_map(layout_id: web::Path<String>, conn: web::Data<re
                 return HttpResponse::InternalServerError().json(book2shelf_map)
             }
         };
-        debug!("Retreived book2shelf: {:?}", book2shelf.book_id);
+        debug!("Retreived shelf {:?} with books {:?}", book2shelf.shelf_id, book2shelf.books);
         book2shelf_map.push(book2shelf);
     }
 
     HttpResponse::Ok().json(book2shelf_map)
 }
 
-pub async fn set_book2shelf_map(conn: web::Data<redis::Client>, book2shelf: web::Json<Book2Shelf>) -> impl Responder {
+pub async fn set_book2shelf_map(conn: web::Data<redis::Client>, layout_id: web::Path<String>, mut body: web::Payload) -> impl Responder {
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-    let book2shelf = book2shelf.into_inner();
-    let book_id = book2shelf.book_id.to_string();
-    let book2shelf_str = serde_json::to_string(&book2shelf).expect("Failed to serialize book2shelf");
+    let mut bytes = web::BytesMut::new();
+    while let Some(item) = futures::StreamExt::next(&mut body).await {
+        bytes.extend_from_slice(&item.unwrap());
+    }
+    let b2s_data = String::from_utf8_lossy(&bytes).to_string();
+    debug!("B2S_data: {}", b2s_data);
+    let b2s_data_deserialized: Vec<Book2Shelf> = serde_json::from_str(&b2s_data).expect("Failed to deserialize book_data");
 
-    let _: () = con.hset(&BOOK2SHELF_KEY, book_id, book2shelf_str).await.expect("Failed to set book2shelf");
-
-    HttpResponse::Ok().json(DefaultResponse::default())
-}
-
-pub async fn get_book_order(
-    conn: web::Data<redis::Client>,
-    layout_id: web::Path<String>,
-    shelf_id: web::Path<Number>) -> impl Responder {
     let layout_id = layout_id.into_inner();
-    let shelf_id = shelf_id.into_inner();
-    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-    let book_oder_key = format!("{}:{}:{}", BOOK_ORDER_KEY, layout_id, shelf_id);
-
-    let book_order_strs: Vec<String> = con.lrange(book_oder_key, 0, -1).await.expect("Failed to read book order");
-    let book_order: Vec<String> = book_order_strs.iter().map(|s| s.to_string()).collect();
-
-    HttpResponse::Ok().json(book_order)
-}
-
-pub async fn set_book_order(
-    conn: web::Data<redis::Client>,
-    layout_id: web::Path<String>,
-    shelf_id: web::Path<Number>,
-    book_order: web::Json<BookOrder>) -> impl Responder {
-    let layout_id = layout_id.into_inner();
-    let shelf_id = shelf_id.into_inner();
-    let book_order = book_order.into_inner();
-    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-    let book_oder_key = format!("{}:{}:{}", BOOK_ORDER_KEY, layout_id, shelf_id);
-
-    let _: () = con.del(&book_oder_key).await.expect("Failed to delete book order");
-    for book_id in book_order.id_list.iter() {
-        let _: () = con.rpush(&book_oder_key, book_id).await.expect("Failed to set book order");
+    let book2shelf_key = format!("{}:{}", BOOK2SHELF_KEY, layout_id);
+    for b2s in b2s_data_deserialized {
+        let b2s_str = serde_json::to_string(&b2s).expect("Failed to serialize book2shelf");
+        let _: () = con.hset(&book2shelf_key, b2s.shelf_id.to_string(), b2s_str).await.expect("Failed to set book2shelf");
+        
     }
 
     HttpResponse::Ok().json(DefaultResponse::default())
