@@ -1,7 +1,7 @@
 use actix_multipart::Multipart;
 use actix_web::{web, App, HttpServer, Responder, post, get};
 use futures_util::TryStreamExt as _;
-use log::info;
+use log::{debug, error, info};
 use redis::AsyncCommands;
 use uuid::Uuid;
 use std::io::Write;
@@ -23,10 +23,15 @@ async fn save_file(mut payload: Multipart, conn: &mut redis::aio::MultiplexedCon
             "content_type": content_type,
             "data": base64::encode(&data),
         });
+        info!("Saving file with id: {}, value: {}", uuid, value.to_string());
 
-        conn.hset(&DATA_KEY, &uuid, value.to_string()).await?;
+        let _ = match conn.hset(&DATA_KEY, &uuid, value.to_string()).await {
+            Ok(val) => val,
+            Err(e) => {error!("{}", e); return Err(Box::new(e));}
+        };
         // conn.set_ex(&uuid, value.to_string(), 3600).await?; // Set with expiration of 1 hour
     }
+    info!("File saved");
     Ok(uuid)
 }
 

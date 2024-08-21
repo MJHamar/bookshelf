@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import BookOnShelf from './BookOnShelf';
 import { getBookCovers } from '../../utils/api';
 
-const Shelf = ({ shelf, b2sMaps, selectedBook, setSelectedBook }) => {
+const Shelf = ({ shelf, b2sMaps,
+
+    selectedBookId, setSelectedBookId }) => {
     let totalSpineWidth = 0;
 
     const [bookCovers, setBookCovers] = useState([]);
@@ -36,6 +38,7 @@ const Shelf = ({ shelf, b2sMaps, selectedBook, setSelectedBook }) => {
                     return <BookOnShelf
                         key={cover.book_id}
                         cover={cover}
+                        setCover={setBookCovers}
                         selectedBook={selectedBook}
                         setSelectedBook={setSelectedBook}
                     />;

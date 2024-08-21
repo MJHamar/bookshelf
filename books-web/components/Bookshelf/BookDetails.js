@@ -5,7 +5,11 @@ import { format, set } from 'date-fns';
 import styles from '../../styles/BookDetails.module.css';
 import { downloadFile } from '../../utils/data_handler';
 
-const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, onSave }) => {
+const BookDetails = ({
+    book, setBook, cover, setCover, progress, SetProgress,
+    isEditing, setIsEditing, onSave,
+
+}) => {
 
     const [bookId, setBookId] = useState(null);
     const [cover, setCover] = useState(null);
@@ -142,8 +146,11 @@ const BookDetails = ({ selectedBook, setSelectedBook, isEditing, setIsEditing, o
         return (
             <BookEditor
                 book={book}
+                setBook={setBook}
                 cover={cover}
+                setCover={setCover}
                 bookProgress={bookProgress}
+                setBookProgress={setBookProgress}
                 onSave={onSave}
                 setIsEditing={setIsEditing}
             />

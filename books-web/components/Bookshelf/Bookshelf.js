@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import Shelf from './Shelf';
 import Decoration from './Decoration';
@@ -10,14 +10,15 @@ import {
     createBook,
     setBook, setBookCover, setBookProgress
 } from '../../utils/api';
-import BookEditor from './BookEditor';
+import { downloadFile } from '@/utils/data_handler';
 
 const Bookshelf = (
-    { selectedBook, setSelectedBook,
-    isEditing, setIsEditing }
+    { isEditing, setIsEditing }
 ) => {
 
     const [layoutData, setLayoutData] = useState(null);
+    const [layoutURL, setLayoutURL] = useState(null);
+    const [layoutSVG, setLayoutSVG] = useState(null);
     const [layout, setLayout] = useState(null);
     const [shelves, setShelves] = useState([]);
     const [b2s_map, setB2SMap] = useState([]);
@@ -27,10 +28,9 @@ const Bookshelf = (
     // obtain Layout data upon startup
     useEffect(() => {
         const fetchLayout = async () => {
-            const crnt_layout = await getCurrentLayout();
-            console.log(`layout: ${JSON.stringify(crnt_layout)}`);
-            setLayoutData(crnt_layout);
-
+            const crnt_layout_id = await getCurrentLayout();
+            console.log(`layout id: ${JSON.stringify(crnt_layout_id)}`);
+            setLayoutData(crnt_layout_id);
         };
         fetchLayout();
     }, []);
@@ -43,11 +43,16 @@ const Bookshelf = (
             if (!layoutData) {
                 return;
             }
+            downloadFile({
+                uuid: layoutData.layout_fname,
+                setFileData: setLayoutURL
+            });
+
             const b2sMap = await getB2SMapping(layoutData.id);
             setB2SMap(b2sMap);
             var bookIds = b2s_map.map(b2s => b2s.book_id);
             console.log(`book ids: ${JSON.stringify(bookIds)}`);
-    
+
             const shelvesData = await getShelves(layoutData.id);
             setShelves(shelvesData);
             console.log(`shelves: ${JSON.stringify(shelvesData)}`);
@@ -55,7 +60,7 @@ const Bookshelf = (
             const decorationSlots = await getDecorationSlots(layoutData.id);
             setDecorationSlots(decorationSlots);
             console.log(`decoration slots: ${JSON.stringify(decorationSlots)}`);
-    
+
             if (decorationSlots.length === 0) {
                 console.log("No decorations found");
                 return
@@ -65,28 +70,27 @@ const Bookshelf = (
             console.log(`decoration data: ${JSON.stringify(decorationsData)}`);
 
         };
-        
         fetchData();
         
     }, [layoutData]);
 
     // obtain layout SVG upon Layout data retrieval
     useEffect(() => {
-        if (!layoutData) {
+        if (!layoutURL) {
             return;
         }
         const fetchLayoutSVG = async () => {
-            fetch(layoutData.layout_fname)
+            fetch(layoutURL)
                 .then((response) => response.text())
                 .then((data) => {
-                    setLayout(data);
+                    setLayoutSVG(data);
                 })
                 .catch((error) => {
                     console.error('Error loading SVG:', error);
                 });
         };
         fetchLayoutSVG();
-    }, [layoutData]);
+    }, [layoutURL]);
 
     const handleSaveBook = ({book, cover, progress}) => {
         console.log(`book: ${JSON.stringify(book)}`);
@@ -109,7 +113,7 @@ const Bookshelf = (
         // closes the editor without saving.
         setIsEditing(false);
     }
-    if (!layout || !layoutData) {
+    if (!layoutSVG || !layoutData) {
         return <div>Loading...</div>;
     }
 
@@ -123,7 +127,7 @@ const Bookshelf = (
                 <TransformComponent>
                     <div
                         className="layout"
-                        dangerouslySetInnerHTML={{ __html: layout }}
+                        dangerouslySetInnerHTML={{ __html: layoutSVG }}
                     />
                     {shelves.map(shelf => (
                         // TODO: have the LayoutData define Shelves and DecorationSlots

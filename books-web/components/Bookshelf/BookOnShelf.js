@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { getBooks, getBookProgress } from '../../utils/api';
 import { downloadFile } from '../../utils/data_handler';
 
-const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
+const BookOnShelf = ({ cover, setCover,
+    selectedBookId, setSelectedBookId}) => {
 
     const [spineWidth, setSpineWidth] = useState(cover.spineWidth);
     const [spineHeight, setSpineHeight] = useState(cover.bookHeight);
@@ -10,7 +11,6 @@ const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
 
     // when initialised, calculate maximum height of the book and
     // resize the book to fit the shelf, maintaining aspect ratio
-
     useEffect(() => {
         const setRelativeSize = () => {
             const shelfWidth = cover.shelf_width;
@@ -34,19 +34,12 @@ const BookOnShelf = ({ cover, selectedBook, setSelectedBook }) => {
     }, [cover]);
 
     const handleClick = () => {
-        if (selectedBook?.cover?.book_id === cover.book_id) {
-            setSelectedBook(null);
+        if (selectedBookId === cover.book_id) {
+            setSelectedBookId(null);
             return;
         }
-        console.log(`selected book: ${JSON.stringify(selectedBook)}`); 
-        console.log(setSelectedBook);
-        console.log(`cover: ${ JSON.stringify(cover) }`);
-        setSelectedBook({ cover: cover });
+        setSelectedBookId(cover.book_id);
     };
-
-    if (selectedBook?.cover?.book_id === cover.book_id) {
-        return;
-    }
 
     return (
         <div

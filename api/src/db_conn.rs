@@ -5,11 +5,13 @@ use chrono::{DateTime, Utc};  // You need to add `chrono` to your Cargo.toml too
 use log::debug;
 use serde_json::Number;
 use std::option::Option;
+use std::vec::Vec;
 
 pub const CURRENT_LAYOUT_KEY: &str = "crnt_layout";
 pub const LAYOUT_KEY: &str = "layouts";
 pub const SHELF_KEY: &str = "shelves";
 pub const BOOK2SHELF_KEY: &str = "book2shelf";
+pub const BOOK_ORDER_KEY: &str = "book_order";
 pub const BOOK_KEY: &str = "books";
 pub const BOOK_COVER_KEY: &str = "book_covers";
 pub const BOOK_PROGRESS_KEY: &str = "book_progress";
@@ -69,6 +71,12 @@ pub struct Book {
 pub struct Book2Shelf {
     pub book_id: String,
     pub shelf_id: Number,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BookOrder {
+    pub shelf_id: Number,
+    pub id_list: Vec<String>
 }
 
 #[derive(Serialize, Deserialize)]

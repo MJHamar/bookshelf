@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { downloadFile } from './data_handler';
 
 const API_BASE_URL = 'http://localhost:3140';
 

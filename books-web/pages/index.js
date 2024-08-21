@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import Bookshelf from '../components/Bookshelf/Bookshelf';
 import { createBook } from '../utils/api';
 
+
 const Home = () => {
-    const [selectedBook, setSelectedBook] = useState(null);
+
     const [isEditing, setIsEditing] = useState(false);
+    
 
     const handleAddBook = async () => {
         // creates a new book through the API and opens an editor.
@@ -13,8 +15,8 @@ const Home = () => {
         let book = bookView.book;
         let cover = bookView.cover;
         let progress = bookView.progress;
-        await setIsEditing(true);
-        setSelectedBook({ book: book, cover: cover, progress: progress });
+        setIsEditing(true);
+        
     };
 
     return (

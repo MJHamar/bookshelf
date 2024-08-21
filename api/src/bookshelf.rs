@@ -3,14 +3,16 @@ use log::{debug,warn,info,error};
 use actix_web::Responder;
 use actix_web::{web, HttpResponse};
 use redis::AsyncCommands;
+use serde_json::Number;
 use crate::db_conn::{Layout, //CurrentLayout,
-                    Shelf, Book2Shelf, BookIdList,
+                    Shelf, Book2Shelf, BookIdList, BookOrder,
                     Book, BookCover, BookProgress, BookView,
                     DefaultResponse,
                     DecorationSlot, Decoration, DecorationIdList,
                     _set_book, _set_book_cover, _set_book_progress,
                     LAYOUT_KEY, CURRENT_LAYOUT_KEY,
-                    SHELF_KEY, BOOK2SHELF_KEY, BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
+                    SHELF_KEY, BOOK2SHELF_KEY, BOOK_ORDER_KEY,
+                    BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
                     DECORATION_SLOT_KEY, DECORATION_KEY,
                     DEFAULT_BOOK_HEIGHT, DEFAULT_BOOK_WIDTH, DEFAULT_SPINE_WIDTH};
 use uuid::Uuid;
@@ -145,6 +147,51 @@ pub async fn get_book2shelf_map(layout_id: web::Path<String>, conn: web::Data<re
     }
 
     HttpResponse::Ok().json(book2shelf_map)
+}
+
+pub async fn set_book2shelf_map(conn: web::Data<redis::Client>, book2shelf: web::Json<Book2Shelf>) -> impl Responder {
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let book2shelf = book2shelf.into_inner();
+    let book_id = book2shelf.book_id.to_string();
+    let book2shelf_str = serde_json::to_string(&book2shelf).expect("Failed to serialize book2shelf");
+
+    let _: () = con.hset(&BOOK2SHELF_KEY, book_id, book2shelf_str).await.expect("Failed to set book2shelf");
+
+    HttpResponse::Ok().json(DefaultResponse::default())
+}
+
+pub async fn get_book_order(
+    conn: web::Data<redis::Client>,
+    layout_id: web::Path<String>,
+    shelf_id: web::Path<Number>) -> impl Responder {
+    let layout_id = layout_id.into_inner();
+    let shelf_id = shelf_id.into_inner();
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let book_oder_key = format!("{}:{}:{}", BOOK_ORDER_KEY, layout_id, shelf_id);
+
+    let book_order_strs: Vec<String> = con.lrange(book_oder_key, 0, -1).await.expect("Failed to read book order");
+    let book_order: Vec<String> = book_order_strs.iter().map(|s| s.to_string()).collect();
+
+    HttpResponse::Ok().json(book_order)
+}
+
+pub async fn set_book_order(
+    conn: web::Data<redis::Client>,
+    layout_id: web::Path<String>,
+    shelf_id: web::Path<Number>,
+    book_order: web::Json<BookOrder>) -> impl Responder {
+    let layout_id = layout_id.into_inner();
+    let shelf_id = shelf_id.into_inner();
+    let book_order = book_order.into_inner();
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let book_oder_key = format!("{}:{}:{}", BOOK_ORDER_KEY, layout_id, shelf_id);
+
+    let _: () = con.del(&book_oder_key).await.expect("Failed to delete book order");
+    for book_id in book_order.id_list.iter() {
+        let _: () = con.rpush(&book_oder_key, book_id).await.expect("Failed to set book order");
+    }
+
+    HttpResponse::Ok().json(DefaultResponse::default())
 }
 
 pub async fn get_books(book_ids: web::Json<BookIdList>, conn: web::Data<redis::Client>) -> impl Responder {

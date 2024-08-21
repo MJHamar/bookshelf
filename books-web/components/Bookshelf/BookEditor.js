@@ -5,8 +5,11 @@ import { uploadFile, downloadFile, deleteFile } from '../../utils/data_handler';
 
 const BookEditor = ({
     book,
+    setBook,
     cover,
+    setCover,
     bookProgress,
+    setBookProgress,
     onSave,
     setIsEditing
 }) => {
@@ -108,6 +111,9 @@ const BookEditor = ({
         console.log(`saving book: ${JSON.stringify(newBook)}`);
         console.log(`saving cover: ${JSON.stringify(newCover)}`);
         console.log(`saving progress: ${JSON.stringify(newProgress)}`);
+        setBook(newBook);
+        setCover(newCover);
+        setBookProgress(newProgress);
         onSave({ book: newBook, cover: newCover, progress: newProgress });
     };
 
