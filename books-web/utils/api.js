@@ -1,14 +1,12 @@
 import axios from 'axios';
-import { downloadFile } from './data_handler';
 
 const API_BASE_URL = 'http://localhost:3140';
 
-const DEF_COVER_ID = "77004530-4d29-4e00-940d-d2654b8e7f04"
-const DEF_SPINE_ID = "a90e6325-edfa-4bcb-961f-a3d2abad79ef"
+export const DEF_COVER_ID = "77004530-4d29-4e00-940d-d2654b8e7f04"
+export const DEF_SPINE_ID = "a90e6325-edfa-4bcb-961f-a3d2abad79ef"
 
 export const getCurrentLayout = async (setLayout) => {
     const response = await axios.get(`${API_BASE_URL}/books/current_layout`);
-    console.log(`current layout: ${JSON.stringify(response.data)}`);
     setLayout(response.data);
 };
 
@@ -21,7 +19,7 @@ export const getB2SMapping = async (layout_id, setBook2ShelfMap) => {
     const response = await axios.get(`${API_BASE_URL}/books/b2s/${layout_id}`);
     let b2s_map = [];
     response.data.forEach(b2s => {
-        b2s_map[b2s.shelf_id] = b2s.books;
+        b2s_map[b2s.shelf_id] = b2s;
     });
     setBook2ShelfMap(b2s_map);
 };
@@ -32,7 +30,7 @@ export const getBook = async (book_id, setBook) => {
 };
 
 export const getBookCover = async (book_ids, setCover) => {
-    const response = await axios.post(`${API_BASE_URL}/books/covers`, [ book_ids ]);
+    const response = await axios.post(`${API_BASE_URL}/books/covers`, { book_ids: book_ids });
     setCover(response.data);
 };
 
@@ -46,8 +44,8 @@ export const getDecorationSlots = async (layout_id, setDecorationSlots) => {
     setDecorationSlots(response.data);
 };
 
-export const getDecorations = async (decorationId, setDecoration) => {
-    const response = await axios.post(`${API_BASE_URL}/books/decoration`, [ decorationId ]);
+export const getDecorations = async (decorationIds, setDecoration) => {
+    const response = await axios.post(`${API_BASE_URL}/books/decoration`, { dec_ids: decorationIds });
     setDecoration(response.data);
 };
 
@@ -70,7 +68,6 @@ export const setBookCover = async (coverData) => {
 }
 
 export const setBookProgress = async (progressData) => {
-    console.log(`progress data: ${JSON.stringify(progressData)}`);
     const response = await axios.post(`${API_BASE_URL}/books/progress/set`, progressData);
     return response.data;
 }

@@ -108,6 +108,7 @@ pub struct BookView {
 pub struct DecorationSlot {
     pub id: Number,
     pub layout_id: String,
+    pub decoration_id: Number,
     pub x_pos: Number,
     pub y_pos: Number,
     pub height: Number,
@@ -117,7 +118,6 @@ pub struct DecorationSlot {
 #[derive(Serialize, Deserialize)]
 pub struct Decoration {
     pub id: String,
-    pub slot_id: Number,
     pub decoration_type: String, 
     pub decoration_fname: String,
 }

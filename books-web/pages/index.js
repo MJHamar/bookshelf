@@ -1,37 +1,143 @@
-import React, { useState, useContext } from 'react';
-import Bookshelf from '../components/Bookshelf/Bookshelf';
+import React, { useState, useRef, useEffect } from 'react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+// import Bookshelf from '../components/Bookshelf/Bookshelf';
 import { createBook } from '../utils/api';
+import {
+    getCurrentLayout, getShelves, getDecorationSlots,
+    getDecorations, getB2SMapping
+    } from '../utils/api';
 
+import Layout from '../components/Layout';
+import Shelf from '../components/Shelf';
 
 const Home = () => {
 
-    const [isEditing, setIsEditing] = useState(false);
-    
+    // reference to the wrapper div
+    const wrapperRef = useRef(null);
+    // layout data which we get from the API
+    const [layoutData, setLayoutData] = useState(null);
+    // layout URL which we generate from the layout data
+    const [layoutURL, setLayoutURL] = useState(null);
+    // shelves data which we get from the API
+    const [shelves, setShelves] = useState([]);
+    // decorations data which we get from the API
+    const [decorationSlots, setDecorationSlots] = useState([]);
+    const [decorations, setDecorations] = useState([]);
+    // 2D array of shelves and books
+    // shelves are identified by consecutive integers
+    // books are identified by their book_id and ordered by their index in the shelf
+    const [book2ShelfMap, setBook2ShelfMap] = useState([]);
 
-    const handleAddBook = async () => {
-        // creates a new book through the API and opens an editor.
-        let bookView = await createBook();
-        console.log(`bookView: ${JSON.stringify(bookView)}`);
-        let book = bookView.book;
-        let cover = bookView.cover;
-        let progress = bookView.progress;
-        setIsEditing(true);
+    // obtain layout data upon startup
+    useEffect(() => {
+        getCurrentLayout(setLayoutData);
+    }, []);
+
+    // once layout data is available, 
+    //      fetch shelves and decorations
+    //      and the book-to-shelf mapping
+    useEffect(() => {
+        if (!layoutData) {
+            return;
+        }
+        getShelves(layoutData.id, setShelves);
+        getDecorationSlots(layoutData.id, setDecorationSlots);
+        getB2SMapping(layoutData.id, setBook2ShelfMap);
+    }, [layoutData]);
+
+    // fetch decorations once the decoration slots are available
+    useEffect(() => {
+        if (!decorationSlots) {
+            return;
+        }
+        const decorationIds = decorationSlots.map(slot => slot.slot_id);
+        getDecorations(decorationIds, setDecorations);
+    }, [decorationSlots]);
+
+    // const [isEditing, setIsEditing] = useState(false);
+
+    // const handleAddBook = async () => {
+    //     // creates a new book through the API and opens an editor.
+    //     let bookView = await createBook();
+    //     console.log(`bookView: ${JSON.stringify(bookView)}`);
+    //     let book = bookView.book;
+    //     let cover = bookView.cover;
+    //     let progress = bookView.progress;
+    //     setIsEditing(true);
         
+    // };
+
+    // TODO: use later
+    const handleSelectComponent = (event, componentRef) => {
+        const selectedComponentRect = componentRef.current.getBoundingClientRect();
+        const fixedElementSize = {
+            width: componentRef.current.width,
+            height: componentRef.current.height
+        }; // example size of fixed element
+
+        // Calculate the desired position for the fixed element
+        const fixedElementPosition = {
+            left: selectedComponentRect.right,
+            top: selectedComponentRect.top
+        };
+
+        // Calculate the required pan to bring the selected component and the fixed element into view
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        const pageWidth = layoutData.width;
+        const pageHeight = layoutData.height;
+
+        // console.log(`viewport: ${viewportWidth} x ${viewportHeight}`);
+        // console.log(`page: ${pageWidth} x ${pageHeight}`);
+        // console.log(`selected component: ${JSON.stringify(selectedComponentRect)}`);
+        // console.log(`fixed element: ${JSON.stringify(fixedElementPosition)}`);
+
+        // Ensure the fixed element fits within the viewport
+        const panX = selectedComponentRect.right - (viewportWidth - fixedElementSize.width) / 2;
+        const panY = selectedComponentRect.top - (viewportHeight - fixedElementSize.height) / 2;
+        const panZoom = pageHeight / selectedComponentRect.height;
+
+        wrapperRef.current.setTransform(panX, panY, panZoom); // Adjust the zoom level as needed
     };
 
+    if (!layoutData) {
+        return (
+            <div>
+                Loading...
+            </div>
+        );
+    }
+
     return (
-        <div>
-            <Bookshelf
-                selectedBook={selectedBook}
-                setSelectedBook={setSelectedBook}
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
-            />
-            <button onClick={handleAddBook} style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
+        <div style={{
+            position: 'absolute', width: layoutData.width, height: layoutData.height,
+            zIndex: 1, top: 0, left: 0
+        }}>
+            <TransformWrapper
+                style={{ height: "100%", width: "100%" }}
+                ref={wrapperRef}
+            >
+                <TransformComponent>
+                    <Layout layoutData={layoutData} />
+                    {(shelves && book2ShelfMap) && shelves.map(shelf => (
+                        <Shelf
+                            key={shelf.id}
+                            shelf={shelf}
+                            b2sMap={book2ShelfMap}
+                            setB2SMap={setBook2ShelfMap}
+                            wrapperRef={wrapperRef}
+                        />
+                    ))}
+            {/* <button onClick={handleAddBook} style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
                 Add Book
-            </button>
+            </button> */}
+                </TransformComponent>
+            </TransformWrapper>
         </div>
     );
 };
+
+
 
 export default Home;
