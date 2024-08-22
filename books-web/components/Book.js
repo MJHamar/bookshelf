@@ -89,7 +89,8 @@ const Book = ({
                 perspective: '1000px',
                 transformOrigin: "right",
                 transformStyle: 'preserve-3d',
-                transition: 'transform 0.5s',
+                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
+                transition: "all 500ms ease",
                 overflow: 'visible',  // Allow content to overflow the bounds
             }}
             onMouseEnter={handleMouseEnter}
@@ -102,7 +103,7 @@ const Book = ({
                 height: '100%',
                 // overflow: "hidden",
                 transformOrigin: "right",
-                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
+                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg)`,
                 transition: "all 500ms ease",
                 willChange: "auto",
                 transformStyle: "preserve-3d",
@@ -126,7 +127,7 @@ const Book = ({
                 height: "100%",
                 flexShrink: 0,
                 transformOrigin: "left",
-                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(${90-rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
+                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(90deg) rotateZ(0deg) skew(0deg, 0deg)`,
                 transition: "all 500ms ease",
                 willChange: "auto",
                 filter: "brightness(0.8) contrast(2)",
