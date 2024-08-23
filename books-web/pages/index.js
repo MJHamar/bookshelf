@@ -36,6 +36,7 @@ const Home = () => {
     const [isPlacing, setIsPlacing] = useState(false);
     const [isOrdering, setIsOrdering] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
 
     // obtain layout data upon startup
     useEffect(() => {
@@ -118,6 +119,25 @@ const Home = () => {
         wrapperRef.current.setTransform(panX, panY, panZoom); // Adjust the zoom level as needed
     };
 
+    const handleAddBook = async () => {
+        // creates a new book through the API and opens an editor.
+        let bookView = await createBook();
+        console.log(`bookView: ${JSON.stringify(bookView)}`);
+        setSelectedBookView({...bookView, book_id: bookView.book.book_id});
+        setIsAdding(true);
+        setIsPlacing(bookView.book.book_id);
+    };
+
+    // once a shelf is selected during adding a book, we can open the editor
+    useEffect(() => {
+        if (!isPlacing || !isAdding) {
+            return;
+        }
+        setIsAdding(false);
+        setIsEditing(isPlacing);
+    }, [isPlacing]);
+
+
     if (!layoutData) {
         return (
             <div>
@@ -148,27 +168,22 @@ const Home = () => {
                             isPlacing={isPlacing} setIsPlacing={setIsPlacing}
                         />
                     ))}
-                    <button style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
+                    <button
+                        onClick={handleAddBook}
+                        style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
                         Add Book
                     </button>
                 </TransformComponent>
             </TransformWrapper>
-            {(selectedBookView && !isEditing && !isPlacing && !isOrdering) && <BookDetails
+            {( selectedBookView ) && <BookDetails
                 book_id={selectedBookView.book_id}
                 coverData={selectedBookView.coverData}
                 coverImageURL={selectedBookView.coverImageURL}
-                setIsEditing={isEditing} setIsPlacing={setIsPlacing}
+                isEditing={isEditing} setIsEditing={setIsEditing}
+                isPlacing={isPlacing} setIsPlacing={setIsPlacing}
+                isOrdering={isOrdering} setIsOrdering={setIsOrdering}
                 coverDimensions={selectedBookView.coverDimensions}
             />}
-            {/* {(selectedBookView && isEditing) && <BookEditor
-                book={selectedBookView?.book || null}
-                setBook={selectedBookView?.setBook || null}
-                coverData={selectedBookView?.coverData || null}
-                setCoverData={selectedBookView?.setCoverData || null}
-                progressData={selectedBookView?.progressData || null}
-                setProgressData={selectedBookView?.setProgressData || null}
-                setIsEditing={setIsEditing}
-            />} */}
         </div>
     );
 };

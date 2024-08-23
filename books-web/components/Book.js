@@ -65,10 +65,42 @@ const Book = ({
             setSpineWidth(spineRef.current.offsetWidth);
         }
     }, [spineImageURL, isHovered, isClicked]);
-    
+
+    // fill selected book view if clicked
+    useEffect(() => {
+        if (!isClicked || !spineRef.current || !coverRef.current) {
+            return;
+        }
+        let coverDimensions = {
+            top: spineRef.current.offsetTop,
+            left: spineRef.current.offsetLeft,
+            width: spineRef.current.offsetWidth + coverRef.current.offsetWidth,
+            height: coverRef.current.offsetHeight
+        };
+        setSelectedBookView({
+            book_id: coverData.book_id,
+            coverData: coverData,
+            coverImageURL: coverImageURL,
+            spineImageURL: spineImageURL,
+            coverDimensions: coverDimensions
+        });
+    }, [isClicked, spineRef, coverRef]);
+
+    // "click" the book if selected
+    useEffect(() => {
+        if (selectedBookView && coverData && selectedBookView.book_id === coverData.book_id) {
+            setIsClicked(true);
+            setRotation(80);
+        } else {
+            setIsClicked(false);
+            setRotation(0);
+        }
+    }, [selectedBookView]);
+
     if (!coverData || !coverImageURL || !spineImageURL) {
         return null;
     }
+
 
     const handleMouseEnter = () => {
         if (!isClicked) {
@@ -92,19 +124,6 @@ const Book = ({
         } else {
             setRotation(80); // Full-cover view
             setIsClicked(true);
-            let coverDimensions = {
-                top: spineRef.current.offsetTop,
-                left: spineRef.current.offsetLeft,
-                width: spineRef.current.offsetWidth + coverRef.current.offsetWidth,
-                height: coverRef.current.offsetHeight
-            };
-            setSelectedBookView({
-                book_id: coverData.book_id,
-                coverData: coverData,
-                coverImageURL: coverImageURL,
-                spineImageURL: spineImageURL,
-                coverDimensions: coverDimensions
-            })
         }
     };
 
