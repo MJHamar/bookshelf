@@ -18,13 +18,15 @@
 .bookDetails {
     left: 0;
     top: 0;
-    max-height: 100%;
+    height: 100%;
     width: 100%;
     padding: 20px;
     background-color: beige;
-    border-radius: 50px;
-    margin-left: 20px;
+    border-radius: 20px;
+    margin-left: 0px;
+    position: absolute;
     overflow-y: auto;
+    opacity: 0.3;
 }
 
 .bookDetails h2 {

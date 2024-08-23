@@ -8,7 +8,8 @@ const Shelf = ({
     shelf,
     b2sMap, setB2SMap,
     selectedBookView, setSelectedBookView,
-    isPlacing, setIsPlacing
+    isPlacing, setIsPlacing,
+    isEditing, setIsEditing
 }) => {
 
     const [bookCovers, setBookCovers] = useState([]);
@@ -101,6 +102,8 @@ const Shelf = ({
                     spineX={cumulativeSpineWidth[idx - 1] || 0}
                     selectedBookView={selectedBookView}
                     setSelectedBookView={setSelectedBookView}
+                    isEditing={isEditing}
+                    setIsEditing={setIsEditing}
                 />
             })}
         </div>

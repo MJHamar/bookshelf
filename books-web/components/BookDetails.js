@@ -4,7 +4,7 @@ import { format, set } from 'date-fns';
 import {
     getBook, getBookProgress,
     getBookProgressReads, checkBookProgressRead,
-    setBook as setBookAPI, setCoverData as setCoverDataAPI,
+    setBook as setBookAPI, setBookCover as setCoverDataAPI,
     setBookProgress as setBookProgressAPI
 } from '../utils/api';
 
@@ -51,6 +51,7 @@ const BookDetails = ({
 
     // when coverData changes, see if fnames need to be updated
     useEffect(() => {
+        console.log(`coverData: ${JSON.stringify(coverData)}`);
         if (coverData?.cover_fname && coverData.cover_fname !== coverImageFname) {
             setCoverImageFname(coverData.cover_fname);
         }
@@ -80,13 +81,6 @@ const BookDetails = ({
 
     const handleLastReadUpdate = () => {
         setLastReadUpdate(!lastReadUpdate);
-    }
-
-    const onClose = () => {
-        // clear data
-        setBook(null);
-        setBookProgress(null);
-        setBookProgressReads(null);
     }
 
     const onEditCancel = () => {
@@ -163,17 +157,21 @@ const BookDetails = ({
     if (!book || !bookProgress || !coverDimensions) {
         return null;
     }
+
+    const containerStyle = {
+        top: '10px',
+        left: '30vw',
+        width: '70vw',
+        height: '80vh',
+        outline: '1px solid red'
+    };
+
     // Edit Book
     if (isEditing && !isPlacing && !isOrdering) {
 
         return (
             <div className={styles.bookDetailsContainer}
-                style={{
-                    top: coverDimensions.top,
-                    left: coverDimensions.left + coverDimensions.width * 0.7,
-                    width: Math.min(window.innerWidth - coverDimensions.left, coverDimensions.width * 2),
-                    height: Math.min(window.innerHeight * 0.8, coverDimensions.height * 2),
-                }}
+                style={containerStyle}
             >
                 <div className={styles.bookDetails}>
                     <h2>Edit Book</h2>
@@ -246,17 +244,12 @@ const BookDetails = ({
     }
     // Book Details
     else if (!isEditing && !isPlacing && !isOrdering) {
-        if (bookProgressReads.reads.length > 0) {
+        if (bookProgressReads && bookProgressReads.reads.length > 0) {
             var isLastReadToday = new Date(bookProgressReads.reads[bookProgressReads.reads.length - 1]).getDate() == new Date().getDate()
         }
         return ( // Book Details
             <div className={styles.bookDetailsContainer}
-                style={{
-                    top: coverDimensions.top,
-                    left: coverDimensions.left + coverDimensions.width*0.7,
-                    width: Math.min(window.innerWidth - coverDimensions.left, coverDimensions.width * 2),
-                    height: Math.min(window.innerHeight * 0.8, coverDimensions.height * 2),
-                }}
+                style={containerStyle}
             >
                 <div className={styles.bookDetails}>
                     <h2>{book?.title}</h2>
@@ -293,7 +286,7 @@ const BookDetails = ({
                     </div>
                     <div className={styles.lastReadSection}>
                         <p><strong>Last Read:</strong> {
-                            bookProgressReads.reads.length > 0 ?
+                            (bookProgressReads && bookProgressReads.reads.length > 0) ?
                                 format(bookProgressReads.reads[bookProgressReads.reads.length - 1], 'yyyy-MM-dd') :
                                 lastReadUpdate ? format(new Date(), 'yyyy-MM-dd') : 'Never'}</p>
                         {(bookProgress.started_dt || startedUpdate) && <p><strong>Started:</strong> { format(

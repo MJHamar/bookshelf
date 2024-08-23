@@ -111,12 +111,11 @@ export const setDecoration = async (decorationData) => {
 }
 
 export const uploadFile = async (
-    { file, setUuid, setUploading }
+    { file, setUuid }
 ) => {
     console.log(`uploading file: ${file}`);
     if (!file) return;
 
-    setUploading(true);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -128,7 +127,6 @@ export const uploadFile = async (
 
     const id = await res.text();
     setUuid(id);
-    setUploading(false);
 };
 
 export const downloadFile = async (

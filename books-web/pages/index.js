@@ -166,6 +166,7 @@ const Home = () => {
                             selectedBookView={selectedBookView}
                             setSelectedBookView={setSelectedBookView}
                             isPlacing={isPlacing} setIsPlacing={setIsPlacing}
+                            isEditing={isEditing} setIsEditing={setIsEditing}
                         />
                     ))}
                     <button
