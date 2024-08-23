@@ -24,19 +24,36 @@ export const getB2SMapping = async (layout_id, setBook2ShelfMap) => {
     setBook2ShelfMap(b2s_map);
 };
 
-export const getBook = async (book_id, setBook) => {
-    const response = await axios.post(`${API_BASE_URL}/books`, [ book_id ]);
-    setBook(response.data);
+export const getBook = async (book_ids, setBook) => {
+    // check if book_ids is an array
+    if (!Array.isArray(book_ids)) {
+        book_ids = [book_ids];
+    }
+    const response = await axios.post(`${API_BASE_URL}/books`, { book_ids: book_ids });
+    setBook(response.data[0]);
 };
 
 export const getBookCover = async (book_ids, setCover) => {
+    // check if book_ids is an array
+    if (!Array.isArray(book_ids)) {
+        book_ids = [book_ids];
+    }
     const response = await axios.post(`${API_BASE_URL}/books/covers`, { book_ids: book_ids });
     setCover(response.data);
 };
 
 export const getBookProgress = async (book_ids, setProgress) => {
-    const response = await axios.post(`${API_BASE_URL}/books/progress`, [ book_ids ]);
-    setProgress(response.data);
+    // check if book_ids is an array
+    if (!Array.isArray(book_ids)) {
+        book_ids = [book_ids];
+    }
+    const response = await axios.post(`${API_BASE_URL}/books/progress`, { book_ids: book_ids });
+    setProgress(response.data[0]);
+}
+
+export const getBookProgressReads = async (book_id, setProgressReads) => {
+    const response = await axios.get(`${API_BASE_URL}/books/progress/reads/${book_id}`);
+    setProgressReads(response.data);
 }
 
 export const getDecorationSlots = async (layout_id, setDecorationSlots) => {
@@ -69,6 +86,11 @@ export const setBookCover = async (coverData) => {
 
 export const setBookProgress = async (progressData) => {
     const response = await axios.post(`${API_BASE_URL}/books/progress/set`, progressData);
+    return response.data;
+}
+
+export const checkBookProgressRead = async (book_id) => {
+    const response = await axios.post(`${API_BASE_URL}/books/progress/reads/${book_id}`);
     return response.data;
 }
 

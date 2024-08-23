@@ -1,17 +1,18 @@
 // Module for handling bookshelf related requests
 use log::{debug,warn,info,error};
+use chrono::{DateTime, TimeZone, Utc};
 use actix_web::Responder;
 use actix_web::{web, HttpResponse};
 use redis::AsyncCommands;
 use crate::db_conn::{Layout, //CurrentLayout,
                     Shelf, Book2Shelf, BookIdList,
-                    Book, BookCover, BookProgress, BookView,
-                    DefaultResponse,
+                    Book, BookCover, BookProgress, BookProgressReads,
+                    BookView, DefaultResponse,
                     DecorationSlot, Decoration, DecorationIdList,
                     _set_book, _set_book_cover, _set_book_progress,
                     LAYOUT_KEY, CURRENT_LAYOUT_KEY,
                     SHELF_KEY, BOOK2SHELF_KEY,
-                    BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY,
+                    BOOK_KEY, BOOK_COVER_KEY, BOOK_PROGRESS_KEY, BOOK_PROGRESS_READS_KEY,
                     DECORATION_SLOT_KEY, DECORATION_KEY,
                     DEFAULT_BOOK_HEIGHT, DEFAULT_BOOK_WIDTH, DEFAULT_SPINE_WIDTH};
 use uuid::Uuid;
@@ -233,6 +234,38 @@ pub async fn get_book_progress(book_ids: web::Json<BookIdList>, conn: web::Data<
     HttpResponse::Ok().json(book_progress_v)
 }
 
+pub async fn get_book_progress_reads(book_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
+    let book_id = book_id.into_inner();
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let new_book_progress_reads: BookProgressReads = BookProgressReads{ book_id: book_id.clone(), reads: Vec::new() };
+    let book_progress_reads_str: String = match con.hget(&BOOK_PROGRESS_READS_KEY, &book_id).await {
+        Ok(book_progress_reads_str) => book_progress_reads_str,
+        Err(_) => serde_json::to_string(&new_book_progress_reads).expect("Failed to serialize book progress")
+    };
+    let book_progress_reads: BookProgressReads = serde_json::from_str(&book_progress_reads_str).expect("Failed to parse book progress");
+
+    HttpResponse::Ok().json(book_progress_reads)
+}
+
+pub async fn set_book_progress_reads(book_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
+    let book_id = book_id.into_inner();
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let new_book_progress_reads: BookProgressReads = BookProgressReads{ book_id: book_id.clone(), reads: Vec::new() };
+    let book_progress_reads_str: String = match con.hget(&BOOK_PROGRESS_READS_KEY, &book_id).await {
+        Ok(book_progress_reads_str) => book_progress_reads_str,
+        Err(_) => serde_json::to_string(&new_book_progress_reads).expect("Failed to serialize book progress")
+    };
+    let mut book_progress_reads: BookProgressReads = serde_json::from_str(&book_progress_reads_str).expect("Failed to parse book progress");
+
+    let today = chrono::Utc::now().date_naive().and_hms_micro_opt(0, 0, 0, 0).expect("Failed to get today's date"); 
+    book_progress_reads.reads.push(today.and_utc()); // TODO: maybe also check if the date is already in the list
+    let book_progress_reads_str = serde_json::to_string(&book_progress_reads).expect("Failed to serialize book progress");
+
+    let _: () = con.hset(&BOOK_PROGRESS_KEY, book_id, book_progress_reads_str).await.expect("Failed to set book progress");
+
+    HttpResponse::Ok().json(DefaultResponse::default())
+}
+
 pub async fn get_decoration_slots(layout_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
     let mut decoration_slots: Vec<DecorationSlot> = Vec::new();
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
@@ -280,7 +313,6 @@ pub async fn create_book() -> impl Responder {
         book_id: book.id.clone(),
         started_dt: None,
         finished_dt: None,
-        last_read_dt: None,
     };
 
     // NOTE: We DO NOT COMMIT to the DB HERE

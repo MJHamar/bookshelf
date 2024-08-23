@@ -16,7 +16,9 @@ where
     let timestamps: Vec<i64> = Vec::deserialize(deserializer)?;
     let dates: Vec<DateTime<Utc>> = timestamps
         .into_iter()
-        .map(|ts| Utc.from_utc_datetime(&chrono::NaiveDateTime::from_timestamp(ts, 0)))
+        .map(|ts| Utc.from_utc_datetime(
+            &chrono::NaiveDateTime::from_timestamp(ts, 0)
+        ))
         .collect();
     Ok(dates)
 }

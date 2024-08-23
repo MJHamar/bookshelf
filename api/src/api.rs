@@ -44,6 +44,8 @@ pub async fn serve() -> std::io::Result<()> {
             .route("/books", web::post().to(bookshelf::get_books))
             .route("/books/covers", web::post().to(bookshelf::get_book_covers))
             .route("/books/progress", web::post().to(bookshelf::get_book_progress))
+            .route("/books/progress/reads/{book_id}", web::get().to(bookshelf::get_book_progress_reads))
+            .route("/books/progress/reads/{book_id}", web::post().to(bookshelf::set_book_progress_reads))
             .route("/books/decoration_slots/{layout_id}", web::get().to(bookshelf::get_decoration_slots))
             .route("/books/decoration", web::post().to(bookshelf::get_decorations))
             .route("/books/create", web::post().to(bookshelf::create_book))

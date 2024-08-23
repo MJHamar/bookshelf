@@ -7,7 +7,7 @@ import Book from "./Book";
 const Shelf = ({
     shelf,
     b2sMap, setB2SMap,
-    wrapperRef
+    setSelectedBookView
 }) => {
 
     const [bookCovers, setBookCovers] = useState([]);
@@ -51,7 +51,8 @@ const Shelf = ({
                 height: shelf.height,
                 display: 'flex',
                 alignItems: 'flex-end',
-                zIndex: 100
+                overflow: 'visible',
+                zIndex: 10
 
                 // , // temporary styling
                 // backgroundColor: 'red',
@@ -62,8 +63,8 @@ const Shelf = ({
                 return <Book
                     key={cover.book_id}
                     initialCoverData={cover}
-                    wrapperRef={wrapperRef}
-                    spineX={cumulativeSpineWidth[idx-1] || 0}
+                    spineX={cumulativeSpineWidth[idx - 1] || 0}
+                    setSelectedBookView={setSelectedBookView}
                 />
             })}
         </div>

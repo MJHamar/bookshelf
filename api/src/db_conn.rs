@@ -15,6 +15,7 @@ pub const BOOK_ORDER_KEY: &str = "book_order";
 pub const BOOK_KEY: &str = "books";
 pub const BOOK_COVER_KEY: &str = "book_covers";
 pub const BOOK_PROGRESS_KEY: &str = "book_progress";
+pub const BOOK_PROGRESS_READS_KEY: &str = "book_progress_reads";
 pub const DECORATION_SLOT_KEY: &str = "decoration_slots";
 pub const DECORATION_KEY: &str = "decorations";
 
@@ -94,7 +95,12 @@ pub struct BookProgress {
     pub book_id: String,
     pub started_dt: Option<DateTime<Utc>>,
     pub finished_dt: Option<DateTime<Utc>>,
-    pub last_read_dt: Option<DateTime<Utc>>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BookProgressReads {
+    pub book_id: String,
+    pub reads: Vec<DateTime<Utc>>
 }
 
 #[derive(Serialize, Deserialize)]

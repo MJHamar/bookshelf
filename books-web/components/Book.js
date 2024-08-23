@@ -1,17 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { downloadFile, DEF_COVER_ID, DEF_SPINE_ID } from "../utils/api";
+
 
 const Book = ({
     initialCoverData,
-    wrapperRef,
-    spineX
+    spineX,
+    setSelectedBookView
 }) => {
     const [coverData, setCoverData] = useState(null);
     const [coverImageURL, setCoverImageURL] = useState(null);
     const [spineImageURL, setSpineImageURL] = useState(null);
-    const [rotation, setRotation] = useState(0); // 0: spine, 45: peak-cover, 90: full-cover
+    const [rotation, setRotation] = useState(0); // 0: spine, 45: peek-cover, 90: full-cover
     const [isHovered, setIsHovered] = useState(false);
     const [isClicked, setIsClicked] = useState(false);
+
+    const spineRef = useRef(null); // Reference to the spine div
+    const coverRef = useRef(null); // Reference to the cover div
+    const [spineWidth, setSpineWidth] = useState(0); // State to store the width of the spine
+
 
     useEffect(() => {
         setCoverData(initialCoverData);
@@ -42,6 +48,14 @@ const Book = ({
         }
     }, [coverData]);
 
+    
+    // Effect to calculate and update the spine width
+    useEffect(() => {
+        if (spineRef.current) {
+            setSpineWidth(spineRef.current.offsetWidth);
+        }
+    }, [spineImageURL, isHovered, isClicked]);
+    
     if (!coverData || !coverImageURL || !spineImageURL) {
         return null;
     }
@@ -62,92 +76,143 @@ const Book = ({
 
     const handleClick = () => {
         if (isClicked) {
-            setRotation(0); // Back to spine view
+            isHovered ? setRotation(45) : setRotation(0); // Back to spine view
+            setSelectedBookView(null);
             setIsClicked(false);
         } else {
             setRotation(80); // Full-cover view
             setIsClicked(true);
-
-            // Adjust the viewport to ensure the details dialog is fully visible
-            wrapperRef.current.zoomToElement(wrapperRef.current.element, 1.5);
+            let coverDimensions = {
+                top: spineRef.current.offsetTop,
+                left: spineRef.current.offsetLeft,
+                width: spineRef.current.offsetWidth + coverRef.current.offsetWidth,
+                height: coverRef.current.offsetHeight
+            };
+            setSelectedBookView({
+                coverData: coverData,
+                coverImageURL: coverImageURL,
+                spineImageURL: spineImageURL,
+                coverDimensions: coverDimensions
+            })
         }
     };
 
+    // let translateX = 0;
+    // if (isClicked) {
+    //     translateX = 0;
+    // } else if (isHovered) {
+    //     translateX = -coverData.spine_width/2;
+    // }
+
+    if (!coverData || !coverImageURL || !spineImageURL) {
+        return null;
+    }
+
     return (
-        <>
-        <div
+        <div /** Placeholer */
             style={{
-                cursor: 'pointer',
                 height: '100%',
-                position: 'relative',
-                left: spineX+100,
-                width: isClicked ? coverData.cover_width : coverData.spine_width,
+                width: coverData.spine_width,
+                left: spineX, // TODO: see if it works without this
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                zIndex: isClicked ? 120 : 110,
-                perspective: '1000px',
-                transformOrigin: "right",
-                transformStyle: 'preserve-3d',
-                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
-                transition: "all 500ms ease",
-                overflow: 'visible',  // Allow content to overflow the bounds
+                alignItems: 'left',
+                overflow: 'visible',
+                outline: '1px solid red',
             }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onClick={handleClick}
         >
-            <div style={{
-                position: "absolute",
-                flexShrink: 0,
-                height: '100%',
-                // overflow: "hidden",
-                transformOrigin: "right",
-                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg)`,
-                transition: "all 500ms ease",
-                willChange: "auto",
-                transformStyle: "preserve-3d",
-            }}>
-                <img
-                    src={spineImageURL}
-                    alt={`spine`}
+            <div /** hitbox */
+                style={{
+                    cursor: 'pointer',
+                    height: '100%',
+                    width: coverData.spine_width,
+                    display: 'flex',
+                    zIndex: 150,
+                    // debug, comment/remove later
+                    position: 'absolute',
+                    backgroundColor: 'rgba(124, 0, 124, 0.5)',
+                }}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleClick}
+            />
+            <div /** Book with all rotations */
+                style={{
+                    height: '100%',
+                    position: 'relative',
+                    width: 'fit-content',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'left',
+                    zIndex: 100,
+                    perspective: '1000px',
+                    transformOrigin: "right",
+                    transformStyle: 'preserve-3d',
+                    transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
+                    transition: "all 500ms ease",
+                    willChange: "auto",
+                    overflow: 'visible',  // Allow content to overflow the bounds
+                    dropShadow: '0 0 10px rgba(0,0,0,0.5)',
+                    outline: '1px solid blue',
+                }}
+            >
+                <div
+                    ref={spineRef}
                     style={{
+                        position: "absolute",
+                        alignItems: "flex-start",
+                        left: 0,
+                        justifyContent: "center",
                         height: '100%',
-                        width: '100%',
-                        objectFit: 'cover',
-                    }}
-                />
-            </div>
-            <div style={{
-                position: "absolute",
-                alignItems: "flex-start",
-                left: coverData.spine_width,
-                justifyContent: "center",
-                width: coverData.cover_width,
-                height: "100%",
-                flexShrink: 0,
-                transformOrigin: "left",
-                transform: `translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(90deg) rotateZ(0deg) skew(0deg, 0deg)`,
-                transition: "all 500ms ease",
-                willChange: "auto",
-                filter: "brightness(0.8) contrast(2)",
-                transformStyle: "preserve-3d",
-                objectFit: 'cover',
-            }}>
-                <img
-                    src={coverImageURL}
-                    alt={`cover`}
+                        width: coverData.spine_width,
+                        flexShrink: 1,
+                        zIndex: 110,
+                        transformOrigin: "right",
+                        transform: `rotateY(0deg)`,
+                        transition: "all 500ms ease",
+                        transformStyle: "preserve-3d",
+                        willChange: "auto"
+                }}>
+                    <img
+                        src={spineImageURL}
+                        alt={`spine`}
+                        style={{
+                            height: '100%',
+                            width: coverData.spine_width,
+                            objectFit: 'cover',
+                        }}
+                    />
+                </div>
+                <div
+                    ref={coverRef}
                     style={{
-                        height: '100%',
+                        position: "absolute",
+                        alignItems: "flex-start",
+                        left: spineWidth,
+                        justifyContent: "center",
+                        height: "100%",
                         width: coverData.cover_width,
+                        flexShrink: 0,
+                        zIndex: 120,
+                        transformOrigin: "left",
+                        transform: `rotateY(90deg)`,
+                        transition: "all 500ms ease",
+                        transformStyle: "preserve-3d",
+                        willChange: "auto",
                         objectFit: 'cover',
-                    }}
-                />
+                }}>
+                    <img
+                        src={coverImageURL}
+                        alt={`cover`}
+                        style={{
+                            height: '100%',
+                            width: coverData.cover_width,
+                            objectFit: 'cover',
+                        }}
+                    />
+                </div>
             </div>
         </div>
-
-    </>
-    
     );
 };
 

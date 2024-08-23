@@ -9,6 +9,7 @@ import {
 
 import Layout from '../components/Layout';
 import Shelf from '../components/Shelf';
+import BookDetails from "../components/BookDetails";
 
 const Home = () => {
 
@@ -27,6 +28,12 @@ const Home = () => {
     // shelves are identified by consecutive integers
     // books are identified by their book_id and ordered by their index in the shelf
     const [book2ShelfMap, setBook2ShelfMap] = useState([]);
+
+    // placeholder for the selected book to be displayed/ edited.
+    const [selectedBookView, setSelectedBookView] = useState(null);
+
+    // editor state
+    const [isEditing, setIsEditing] = useState(false);
 
     // obtain layout data upon startup
     useEffect(() => {
@@ -115,8 +122,8 @@ const Home = () => {
             zIndex: 1, top: 0, left: 0
         }}>
             <TransformWrapper
-                style={{ height: "100%", width: "100%" }}
-                ref={wrapperRef}
+                style={{ height: "100%", width: "100%", zIndex: 1 }}
+                ref={wrapperRef} 
             >
                 <TransformComponent>
                     <Layout layoutData={layoutData} />
@@ -126,7 +133,7 @@ const Home = () => {
                             shelf={shelf}
                             b2sMap={book2ShelfMap}
                             setB2SMap={setBook2ShelfMap}
-                            wrapperRef={wrapperRef}
+                            setSelectedBookView={setSelectedBookView}
                         />
                     ))}
             {/* <button onClick={handleAddBook} style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
@@ -134,6 +141,12 @@ const Home = () => {
             </button> */}
                 </TransformComponent>
             </TransformWrapper>
+            {selectedBookView && <BookDetails
+                coverData={selectedBookView.coverData}
+                coverImageURL={selectedBookView.coverImageURL}
+                setIsEditing={isEditing}
+                coverDimensions={selectedBookView.coverDimensions}
+            />}
         </div>
     );
 };
