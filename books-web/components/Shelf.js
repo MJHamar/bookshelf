@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { downloadFile, uploadFile } from "../utils/api";
-import { getBookCover } from "../utils/api";
+import { getBookCover, setB2SMapping } from "../utils/api";
 import Book from "./Book";
 
 
@@ -44,16 +44,15 @@ const Shelf = ({
 
     const handlePlaceClick = () => {
         setB2SMap(prev => {
-            let newMap = { ...prev };
-            // find the shelf where the book currently is
-            let oldShelf = Object.keys(newMap).find(key => newMap[key].books.includes(isPlacing));
-            // remove the book from the old shelf
-            if (oldShelf) {
-                newMap[oldShelf] = { ...newMap[oldShelf], books: newMap[oldShelf].books.filter(book => book !== isPlacing) };
-            }
-            // add the book to the new shelf
-            newMap[shelf.id] = { ...newMap[shelf.id], books: [...newMap[shelf.id].books, isPlacing] };
-            return newMap;
+            // remove the book from the previous shelf
+            // and add it to the new shelf
+            // keep in mind that prev is a list of shelves, each shelf containing a list of books and a shelf id
+            let prevShelves = [...prev];
+            let prevShelf = prevShelves.find(s => s.books.includes(isPlacing));
+            let newShelf = prevShelves[shelf.id];
+            prevShelf.books = prevShelf.books.filter(b => b !== isPlacing);
+            newShelf.books.push(isPlacing);
+            return prevShelves;
         });
         setIsPlacing(null);
     };

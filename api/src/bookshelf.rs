@@ -149,27 +149,6 @@ pub async fn get_book2shelf_map(layout_id: web::Path<String>, conn: web::Data<re
     HttpResponse::Ok().json(book2shelf_map)
 }
 
-pub async fn set_book2shelf_map(conn: web::Data<redis::Client>, layout_id: web::Path<String>, mut body: web::Payload) -> impl Responder {
-    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
-    let mut bytes = web::BytesMut::new();
-    while let Some(item) = futures::StreamExt::next(&mut body).await {
-        bytes.extend_from_slice(&item.unwrap());
-    }
-    let b2s_data = String::from_utf8_lossy(&bytes).to_string();
-    debug!("B2S_data: {}", b2s_data);
-    let b2s_data_deserialized: Vec<Book2Shelf> = serde_json::from_str(&b2s_data).expect("Failed to deserialize book_data");
-
-    let layout_id = layout_id.into_inner();
-    let book2shelf_key = format!("{}:{}", BOOK2SHELF_KEY, layout_id);
-    for b2s in b2s_data_deserialized {
-        let b2s_str = serde_json::to_string(&b2s).expect("Failed to serialize book2shelf");
-        let _: () = con.hset(&book2shelf_key, b2s.shelf_id.to_string(), b2s_str).await.expect("Failed to set book2shelf");
-        
-    }
-
-    HttpResponse::Ok().json(DefaultResponse::default())
-}
-
 pub async fn get_books(book_ids: web::Json<BookIdList>, conn: web::Data<redis::Client>) -> impl Responder {
     info!("Getting books");
     let book_ids = &book_ids.book_ids;
@@ -348,6 +327,29 @@ pub async fn set_book(conn: web::Data<redis::Client>, mut body: web::Payload) ->
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }
+
+pub async fn set_book2shelf_map(conn: web::Data<redis::Client>, layout_id: web::Path<String>, mut body: web::Payload) -> impl Responder {
+    info!("Setting book2shelf map");
+    let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
+    let mut bytes = web::BytesMut::new();
+    while let Some(item) = futures::StreamExt::next(&mut body).await {
+        bytes.extend_from_slice(&item.unwrap());
+    }
+    let b2s_data = String::from_utf8_lossy(&bytes).to_string();
+    debug!("B2S_data: {}", b2s_data);
+    let b2s_data_deserialized: Vec<Book2Shelf> = serde_json::from_str(&b2s_data).expect("Failed to deserialize book_data");
+
+    let layout_id = layout_id.into_inner();
+    let book2shelf_key = format!("{}:{}", BOOK2SHELF_KEY, layout_id);
+    for b2s in b2s_data_deserialized {
+        let b2s_str = serde_json::to_string(&b2s).expect("Failed to serialize book2shelf");
+        let _: () = con.hset(&book2shelf_key, b2s.shelf_id.to_string(), b2s_str).await.expect("Failed to set book2shelf");
+        
+    }
+
+    HttpResponse::Ok().json(DefaultResponse::default())
+}
+
 
 pub async fn set_book_cover(conn: web::Data<redis::Client>, mut body: web::Payload) -> impl Responder {
     info!("Setting book cover");

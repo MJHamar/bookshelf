@@ -4,7 +4,7 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { createBook } from '../utils/api';
 import {
     getCurrentLayout, getShelves, getDecorationSlots,
-    getDecorations, getB2SMapping
+    getDecorations, getB2SMapping, setB2SMapping
     } from '../utils/api';
 
 import Layout from '../components/Layout';
@@ -62,6 +62,14 @@ const Home = () => {
         const decorationIds = decorationSlots.map(slot => slot.slot_id);
         getDecorations(decorationIds, setDecorations);
     }, [decorationSlots]);
+
+    // when the b2s map is updated, reflect this in the database
+    useEffect(() => {
+        if (!book2ShelfMap || !layoutData) {
+            return;
+        }
+        setB2SMapping(layoutData.id, book2ShelfMap);
+    }, [book2ShelfMap]);
 
     // const [isEditing, setIsEditing] = useState(false);
 

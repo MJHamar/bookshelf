@@ -79,6 +79,12 @@ export const setBook = async (bookData) => {
     return response.data;
 }
 
+export const setB2SMapping = async (layout_id, b2sData) => {
+    console.log(`setB2SMapping: ${JSON.stringify(b2sData)}`);
+    const response = await axios.post(`${API_BASE_URL}/books/b2s/${layout_id}`, b2sData);
+    return response.data;
+}
+
 export const setBookCover = async (coverData) => {
     const response = await axios.post(`${API_BASE_URL}/books/covers/set`, coverData);
     return response.data;
