@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { downloadFile } from '../utils/api';
 import { format } from 'date-fns';
 import {
-    getBook, getBookProgress, setBookProgress,
+    getBook, getBookProgress, setBookProgress as setBookProgressAPI,
     getBookProgressReads, checkBookProgressRead
 } from '../utils/api';
 
@@ -68,6 +68,7 @@ const BookDetails = ({
         if (finishedUpdate) newProgress.finished_dt = finishedUpdate;
         if (startedUpdate || finishedUpdate) {
             setBookProgress(newProgress);
+            setBookProgressAPI(newProgress);
         }
         if (lastReadUpdate) {
             checkBookProgressRead(book.book_id);
@@ -136,6 +137,12 @@ const BookDetails = ({
                     </button>
                     <p><strong>Last Read:</strong> {bookProgressReads.reads.length > 0 ? format(bookProgressReads.reads[bookProgressReads.reads.length - 1], 'yyyy-MM-dd') :
                         lastReadUpdate ? format(new Date(), 'yyyy-MM-dd') : 'Never'}</p>
+                    {(bookProgress.started_dt || startedUpdate) && <p><strong>Started:</strong> { format(
+                        bookProgress.started_dt ? bookProgress.started_dt : startedUpdate, 'yyyy-MM-dd')
+                    }</p>}
+                    {(bookProgress.finished_dt || finishedUpdate) && <p><strong>Finished:</strong> { format(
+                        bookProgress.finished_dt ? bookProgress.finished_dt : finishedUpdate, 'yyyy-MM-dd')
+                    }</p>}
                 </div>
                 {(startedUpdate || finishedUpdate || lastReadUpdate) && (
                     <button onClick={onSave} className={styles.saveButton}>
