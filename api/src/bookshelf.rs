@@ -4,6 +4,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use actix_web::Responder;
 use actix_web::{web, HttpResponse};
 use redis::AsyncCommands;
+use serde::de;
 use crate::db_conn::{Layout, //CurrentLayout,
                     Shelf, Book2Shelf, BookIdList,
                     Book, BookCover, BookProgress, BookProgressReads,
@@ -227,6 +228,7 @@ pub async fn get_book_progress_reads(book_id: web::Path<String>, conn: web::Data
 }
 
 pub async fn set_book_progress_reads(book_id: web::Path<String>, conn: web::Data<redis::Client>) -> impl Responder {
+    info!("Setting book progress reads");
     let book_id = book_id.into_inner();
     let mut con = conn.get_multiplexed_tokio_connection().await.expect("Connection failed");
     let new_book_progress_reads: BookProgressReads = BookProgressReads{ book_id: book_id.clone(), reads: Vec::new() };
@@ -239,8 +241,9 @@ pub async fn set_book_progress_reads(book_id: web::Path<String>, conn: web::Data
     let today = chrono::Utc::now().date_naive().and_hms_micro_opt(0, 0, 0, 0).expect("Failed to get today's date"); 
     book_progress_reads.reads.push(today.and_utc()); // TODO: maybe also check if the date is already in the list
     let book_progress_reads_str = serde_json::to_string(&book_progress_reads).expect("Failed to serialize book progress");
+    debug!("Book progress reads: {}", book_progress_reads_str);
 
-    let _: () = con.hset(&BOOK_PROGRESS_KEY, book_id, book_progress_reads_str).await.expect("Failed to set book progress");
+    let _: () = con.hset(&BOOK_PROGRESS_READS_KEY, book_id, book_progress_reads_str).await.expect("Failed to set book progress");
 
     HttpResponse::Ok().json(DefaultResponse::default())
 }

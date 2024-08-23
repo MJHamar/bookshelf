@@ -30,6 +30,8 @@ const BookDetails = ({
     const [description, setDescription] = useState(null);
 
     // handle cover data
+    const initialCoverImageFname = coverData?.cover_fname || null;
+    const initialSpineImageFname = coverData?.spine_fname || null;
     const [coverImageFname, setCoverImageFname] = useState(null);
     const [spineImageFname, setSpineImageFname] = useState(null);
 
@@ -57,6 +59,13 @@ const BookDetails = ({
         }
     }, [coverData]);
 
+    // log book progress reads
+    useEffect(() => {
+        if (startedUpdate) {
+            setLastReadUpdate(true);
+        }
+    }, [startedUpdate]);
+
     const handleProgressChange = async (status) => {
         let now = new Date();
         if (status === 1) {
@@ -80,6 +89,16 @@ const BookDetails = ({
         setBookProgressReads(null);
     }
 
+    const onEditCancel = () => {
+        // clear updates
+        setTitle(null);
+        setAuthor(null);
+        setDescription(null);
+        setCoverImageFname(initialCoverImageFname);
+        setSpineImageFname(initialSpineImageFname);
+        setIsEditing(false);
+    }
+
     const handlePlace = () => {
         console.log(`Placing book ${book_id}`);
         setIsPlacing(book_id);
@@ -93,6 +112,7 @@ const BookDetails = ({
         if (title || author || description) {
             setBook(newBook);
             setBookAPI(newBook);
+            console.log(`saving book: ${JSON.stringify(newBook)}`);
         }
         let newCover = { ...coverData };
         // fnames are already set in coverData
@@ -103,6 +123,7 @@ const BookDetails = ({
         // }
         if (coverImageFname || spineImageFname) {
             setCoverDataAPI(newCover);
+            console.log(`saving cover: ${JSON.stringify(newCover)}`);
         }
 
         let newProgress = { ...bookProgress };
@@ -111,9 +132,13 @@ const BookDetails = ({
         if (startedUpdate || finishedUpdate) {
             setBookProgress(newProgress);
             setBookProgressAPI(newProgress);
+            console.log(`saving progress: ${JSON.stringify(newProgress)}`);
         }
         if (lastReadUpdate) {
-            checkBookProgressRead(book.book_id);
+            checkBookProgressRead(book_id).then(() => {
+                getBookProgressReads(book_id, setBookProgressReads);
+            });
+            console.log(`saving lastReadUpdate`);
         }
         // clean updates
         // bookData
@@ -129,10 +154,6 @@ const BookDetails = ({
         setLastReadUpdate(false);
         // close editor, if open
         setIsEditing(false);
-
-        console.log(`saving book: ${JSON.stringify(newBook)}`);
-        console.log(`saving cover: ${JSON.stringify(newCover)}`);
-        console.log(`saving progress: ${JSON.stringify(newProgress)}`);
     }
 
     const onEdit = () => {
@@ -212,7 +233,7 @@ const BookDetails = ({
                     >
                         Save
                     </button>
-                    <button onClick={onClose} className={styles.cancelButton}>
+                    <button onClick={onEditCancel} className={styles.cancelButton}>
                         Cancel
                     </button>
                 </div>
@@ -225,6 +246,9 @@ const BookDetails = ({
     }
     // Book Details
     else if (!isEditing && !isPlacing && !isOrdering) {
+        if (bookProgressReads.reads.length > 0) {
+            var isLastReadToday = new Date(bookProgressReads.reads[bookProgressReads.reads.length - 1]).getDate() == new Date().getDate()
+        }
         return ( // Book Details
             <div className={styles.bookDetailsContainer}
                 style={{
@@ -268,21 +292,24 @@ const BookDetails = ({
                             )}
                     </div>
                     <div className={styles.lastReadSection}>
-                        <button
-                            onClick={handleLastReadUpdate}
-                            className={lastReadUpdate ? styles.notReadTodayButton : styles.readTodayButton}>
-                            {lastReadUpdate ? 'I didn\'t read it!' : 'I read this today!'}
-                        </button>
-                        <p><strong>Last Read:</strong> {bookProgressReads.reads.length > 0 ? format(bookProgressReads.reads[bookProgressReads.reads.length - 1], 'yyyy-MM-dd') :
-                            lastReadUpdate ? format(new Date(), 'yyyy-MM-dd') : 'Never'}</p>
+                        <p><strong>Last Read:</strong> {
+                            bookProgressReads.reads.length > 0 ?
+                                format(bookProgressReads.reads[bookProgressReads.reads.length - 1], 'yyyy-MM-dd') :
+                                lastReadUpdate ? format(new Date(), 'yyyy-MM-dd') : 'Never'}</p>
                         {(bookProgress.started_dt || startedUpdate) && <p><strong>Started:</strong> { format(
                             bookProgress.started_dt ? bookProgress.started_dt : startedUpdate, 'yyyy-MM-dd')
                         }</p>}
                         {(bookProgress.finished_dt || finishedUpdate) && <p><strong>Finished:</strong> { format(
                             bookProgress.finished_dt ? bookProgress.finished_dt : finishedUpdate, 'yyyy-MM-dd')
                         }</p>}
+                        <button
+                            onClick={handleLastReadUpdate}
+                            className={(lastReadUpdate || isLastReadToday) ? styles.notReadTodayButton : styles.readTodayButton}>
+                            {(lastReadUpdate || isLastReadToday) ?
+                                'I didn\'t read it!' : 'I read this today!'}
+                        </button>
                     </div>
-                    {(startedUpdate || finishedUpdate || lastReadUpdate) && (
+                    {(startedUpdate || finishedUpdate || (lastReadUpdate && !isLastReadToday)) && (
                         <button onClick={onSave} className={styles.saveButton}>
                             Save
                         </button>
