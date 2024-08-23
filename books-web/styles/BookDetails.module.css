@@ -121,11 +121,12 @@
     background-color: #f44336;
     color: white;
     padding: 10px 20px;
+    margin-right: 5px;
     cursor: pointer;
     border-radius: 20px;
     border-width: 0px;
     font-size: 1em;
-    position: absolute;
+    /* position: absolute; */
     bottom: 5%;
     right: 2%;
 }

@@ -5,7 +5,7 @@ import { downloadFile, DEF_COVER_ID, DEF_SPINE_ID } from "../utils/api";
 const Book = ({
     initialCoverData,
     spineX,
-    setSelectedBookView
+    selectedBookView, setSelectedBookView
 }) => {
     const [coverData, setCoverData] = useState(null);
     const [coverImageURL, setCoverImageURL] = useState(null);
@@ -48,7 +48,17 @@ const Book = ({
         }
     }, [coverData]);
 
-    
+    // check if the selected book is the current book
+    useEffect(() => {
+        if (selectedBookView && coverData && selectedBookView.book_id && selectedBookView.book_id === coverData.book_id) {
+            setIsClicked(true);
+            setRotation(80);
+        } else {
+            setIsClicked(false);
+            setRotation(0);
+        }
+    }, [coverData]);
+
     // Effect to calculate and update the spine width
     useEffect(() => {
         if (spineRef.current) {
@@ -89,6 +99,7 @@ const Book = ({
                 height: coverRef.current.offsetHeight
             };
             setSelectedBookView({
+                book_id: coverData.book_id,
                 coverData: coverData,
                 coverImageURL: coverImageURL,
                 spineImageURL: spineImageURL,

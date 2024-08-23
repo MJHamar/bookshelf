@@ -32,7 +32,9 @@ const Home = () => {
     // placeholder for the selected book to be displayed/ edited.
     const [selectedBookView, setSelectedBookView] = useState(null);
 
-    // editor state
+    // editor states
+    const [isPlacing, setIsPlacing] = useState(false);
+    const [isOrdering, setIsOrdering] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
     // obtain layout data upon startup
@@ -74,7 +76,7 @@ const Home = () => {
         
     // };
 
-    // TODO: use later
+    // TODO: use later. Used to set the viewports to the selected component
     const handleSelectComponent = (event, componentRef) => {
         const selectedComponentRect = componentRef.current.getBoundingClientRect();
         const fixedElementSize = {
@@ -133,20 +135,32 @@ const Home = () => {
                             shelf={shelf}
                             b2sMap={book2ShelfMap}
                             setB2SMap={setBook2ShelfMap}
+                            selectedBookView={selectedBookView}
                             setSelectedBookView={setSelectedBookView}
+                            isPlacing={isPlacing} setIsPlacing={setIsPlacing}
                         />
                     ))}
-            {/* <button onClick={handleAddBook} style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
-                Add Book
-            </button> */}
+                    <button style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
+                        Add Book
+                    </button>
                 </TransformComponent>
             </TransformWrapper>
-            {selectedBookView && <BookDetails
+            {(selectedBookView && !isEditing && !isPlacing && !isOrdering) && <BookDetails
+                book_id={selectedBookView.book_id}
                 coverData={selectedBookView.coverData}
                 coverImageURL={selectedBookView.coverImageURL}
-                setIsEditing={isEditing}
+                setIsEditing={isEditing} setIsPlacing={setIsPlacing}
                 coverDimensions={selectedBookView.coverDimensions}
             />}
+            {/* {(selectedBookView && isEditing) && <BookEditor
+                book={selectedBookView?.book || null}
+                setBook={selectedBookView?.setBook || null}
+                coverData={selectedBookView?.coverData || null}
+                setCoverData={selectedBookView?.setCoverData || null}
+                progressData={selectedBookView?.progressData || null}
+                setProgressData={selectedBookView?.setProgressData || null}
+                setIsEditing={setIsEditing}
+            />} */}
         </div>
     );
 };

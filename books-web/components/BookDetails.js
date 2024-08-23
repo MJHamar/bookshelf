@@ -9,9 +9,10 @@ import {
 import styles from '../styles/BookDetails.module.css';
 
 const BookDetails = ({
+    book_id,
     coverData,
     coverImageURL,
-    setIsEditing,
+    setIsEditing, setIsPlacing,
     coverDimensions
 }) => {
 
@@ -55,6 +56,12 @@ const BookDetails = ({
         setBookProgressReads(null);
     }
 
+    const handlePlace = () => {
+        let book_id = coverData?.book_id || selectedBookView.book?.book_id;
+        console.log(`Placing book ${book_id}`);
+        setIsPlacing(book_id);
+    };
+
     const onSave = async () => {
         let newProgress = { ...bookProgress };
         if (startedUpdate) newProgress.started_dt = startedUpdate;
@@ -74,7 +81,6 @@ const BookDetails = ({
     const onEdit = () => {
         setIsEditing(coverData.book_id);
     }
-
 
     if (!book || !bookProgress || !coverDimensions) {
         return null;
@@ -138,6 +144,9 @@ const BookDetails = ({
                 )}
                 <button onClick={onEdit} className={styles.editButton}>
                     Edit
+                </button>
+                <button onClick={handlePlace} className={styles.editButton}>
+                    Select Shelf
                 </button>
             </div>
         </div>
