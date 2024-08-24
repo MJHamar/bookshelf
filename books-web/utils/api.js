@@ -66,12 +66,15 @@ export const getDecorations = async (decorationIds, setDecoration) => {
     setDecoration(response.data);
 };
 
-export const createBook = async (setBook, setCover, setProgress) => {
+export const createBook = async (setBookView) => {
     const response = await axios.post(`${API_BASE_URL}/books/create`);
-    let bookView = response.data;
-    setBook(bookView.book);
-    setCover(bookView.cover);
-    setProgress(bookView.progress);
+    const view = response.data;
+    setBookView({
+        book_id: view.book.id,
+        coverData: view.cover,
+        bookData: view.book,
+        progressData: view.progress,
+    });
 }
 
 export const setBook = async (bookData) => {
@@ -80,7 +83,7 @@ export const setBook = async (bookData) => {
 }
 
 export const setB2SMapping = async (layout_id, b2sData) => {
-    console.log(`setB2SMapping: ${JSON.stringify(b2sData)}`);
+    console.log(`API:: setB2SMapping: ${JSON.stringify(b2sData)}`);
     const response = await axios.post(`${API_BASE_URL}/books/b2s/${layout_id}`, b2sData);
     return response.data;
 }

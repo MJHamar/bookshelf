@@ -12,16 +12,17 @@ import styles from '../styles/BookDetails.module.css';
 
 const BookDetails = ({
     book_id,
+    bookData,
+    progressData,
     coverData,
-    coverImageURL,
     isEditing, setIsEditing,
     isPlacing, setIsPlacing,
     isOrdering, setIsOrdering,
-    coverDimensions
+    isAdding, setIsAdding
 }) => {
 
-    const [book, setBook] = useState(null);
-    const [bookProgress, setBookProgress] = useState(null);
+    const [book, setBook] = useState(bookData);
+    const [bookProgress, setBookProgress] = useState(progressData);
     const [bookProgressReads, setBookProgressReads] = useState(null);
 
     // handle book data
@@ -43,9 +44,9 @@ const BookDetails = ({
     // when coverData is available, load book and progress data
     useEffect(() => {
         if (coverData?.book_id && !book && !bookProgress) {
-            getBook(coverData.book_id, setBook);
-            getBookProgress(coverData.book_id, setBookProgress);
-            getBookProgressReads(coverData.book_id, setBookProgressReads);
+            if (!book) getBook(coverData.book_id, setBook);
+            if (!bookProgress) getBookProgress(coverData.book_id, setBookProgress);
+            if (!bookProgressReads) getBookProgressReads(coverData.book_id, setBookProgressReads);
         }
     }, [coverData]);
 
@@ -98,12 +99,17 @@ const BookDetails = ({
         setIsPlacing(book_id);
     };
 
+    const handleOrder = () => {
+        console.log(`Ordering book ${book_id}`);
+        setIsOrdering(true);
+    };
+
     const onSave = async () => {
         let newBook = { ...book };
         if (title) newBook = { ...newBook, title };
         if (author) newBook = { ...newBook, author };
         if (description) newBook = { ...newBook, description };
-        if (title || author || description) {
+        if (isAdding || title || author || description) {
             setBook(newBook);
             setBookAPI(newBook);
             console.log(`saving book: ${JSON.stringify(newBook)}`);
@@ -115,7 +121,7 @@ const BookDetails = ({
         // if (book_width) newCover = { ...newCover, book_width };
         // if (spine_width) newCover = { ...newCover, spine_width };
         // }
-        if (coverImageFname || spineImageFname) {
+        if (isAdding || coverImageFname || spineImageFname) {
             setCoverDataAPI(newCover);
             console.log(`saving cover: ${JSON.stringify(newCover)}`);
         }
@@ -123,7 +129,7 @@ const BookDetails = ({
         let newProgress = { ...bookProgress };
         if (startedUpdate) newProgress.started_dt = startedUpdate;
         if (finishedUpdate) newProgress.finished_dt = finishedUpdate;
-        if (startedUpdate || finishedUpdate) {
+        if (isAdding || startedUpdate || finishedUpdate) {
             setBookProgress(newProgress);
             setBookProgressAPI(newProgress);
             console.log(`saving progress: ${JSON.stringify(newProgress)}`);
@@ -146,6 +152,8 @@ const BookDetails = ({
         setStartedUpdate(null);
         setFinishedUpdate(null);
         setLastReadUpdate(false);
+        // set isAdding to DONE if relevant
+        if (isAdding) setIsAdding('DONE');
         // close editor, if open
         setIsEditing(false);
     }
@@ -154,7 +162,7 @@ const BookDetails = ({
         setIsEditing(true);
     }
 
-    if (!book || !bookProgress || !coverDimensions) {
+    if (!book || !bookProgress) {
         return null;
     }
 
@@ -163,7 +171,7 @@ const BookDetails = ({
         left: '30vw',
         width: '70vw',
         height: '80vh',
-        outline: '1px solid red'
+
     };
 
     // Edit Book
@@ -207,24 +215,6 @@ const BookDetails = ({
                             className={styles.textArea}
                         />
                     </label>
-                    {/* <label>
-                        Cover Image:
-                        <input
-                            type="file"
-                            onChange={handleCoverImageUpload}
-                            className={styles.inputField}
-                        />
-                        {coverImageURL && <img src={coverImageURL} alt="Cover" className={styles.previewImage} />}
-                    </label>
-                    <label>
-                        Spine Image:
-                        <input
-                            type="file"
-                            onChange={handleSpineImageUpload}
-                            className={styles.inputField}
-                        />
-                        {spineImageURL && <img src={spineImageURL} alt="Spine" className={styles.previewImage} />}
-                    </label> */}
                     <button
                         onClick={onSave}
                         className={styles.saveButton}
@@ -239,7 +229,7 @@ const BookDetails = ({
         );
     }
     // Place or Order Book
-    else if (!isEditing && (isPlacing || isOrdering)) {
+    else if (isPlacing || isOrdering) {
         return;
     }
     // Book Details
@@ -299,7 +289,7 @@ const BookDetails = ({
                             onClick={handleLastReadUpdate}
                             className={(lastReadUpdate || isLastReadToday) ? styles.notReadTodayButton : styles.readTodayButton}>
                             {(lastReadUpdate || isLastReadToday) ?
-                                'I didn\'t read it!' : 'I read this today!'}
+                                'I didn\'t read it today!' : 'I read this today!'}
                         </button>
                     </div>
                     {(startedUpdate || finishedUpdate || (lastReadUpdate && !isLastReadToday)) && (
@@ -312,6 +302,9 @@ const BookDetails = ({
                     </button>
                     <button onClick={handlePlace} className={styles.editButton}>
                         Select Shelf
+                    </button>
+                    <button onClick={handleOrder} className={styles.editButton}>
+                        Move Book
                     </button>
                 </div>
             </div>

@@ -69,21 +69,35 @@ const Home = () => {
         if (!book2ShelfMap || !layoutData) {
             return;
         }
-        setB2SMapping(layoutData.id, book2ShelfMap);
+        if (!isAdding) setB2SMapping(layoutData.id, book2ShelfMap);
     }, [book2ShelfMap]);
 
-    // const [isEditing, setIsEditing] = useState(false);
+    // when a book is added, first place it somewhere
+    // then open the editor
+    useEffect(() => {
+        console.log('isAdding:', isAdding); 
+        console.log('selectedBookView:', selectedBookView);
+        console.log('isPlacing:', isPlacing);
+        if (!isAdding || !selectedBookView) {
+            return;
+        }
+        // if isAdding is of type boolean, we place it first.
+        // Otherwise, we don't need to set anything in this effect
+        let addingIsBoolean = typeof isAdding === 'boolean';
+        if (addingIsBoolean && !isPlacing) {
+            // first round, set adding to book id and place it.
+            setIsPlacing(selectedBookView.book_id);
+            setIsAdding(selectedBookView.book_id);
+            setIsEditing(true);
+        } else if (isAdding === 'DONE') {
+            // final round, update the book2shelf map
+            // and reset the adding state
+            console.log('Finalising Add Book: bookView: ', selectedBookView);
+            setB2SMapping(layoutData.id, book2ShelfMap);
+            setIsAdding(false);
+        }
 
-    // const handleAddBook = async () => {
-    //     // creates a new book through the API and opens an editor.
-    //     let bookView = await createBook();
-    //     console.log(`bookView: ${JSON.stringify(bookView)}`);
-    //     let book = bookView.book;
-    //     let cover = bookView.cover;
-    //     let progress = bookView.progress;
-    //     setIsEditing(true);
-        
-    // };
+    }, [selectedBookView, isAdding]);
 
     // TODO: use later. Used to set the viewports to the selected component
     const handleSelectComponent = (event, componentRef) => {
@@ -121,21 +135,44 @@ const Home = () => {
 
     const handleAddBook = async () => {
         // creates a new book through the API and opens an editor.
-        let bookView = await createBook();
-        console.log(`bookView: ${JSON.stringify(bookView)}`);
-        setSelectedBookView({...bookView, book_id: bookView.book.book_id});
+        createBook(setSelectedBookView);
         setIsAdding(true);
-        setIsPlacing(bookView.book.book_id);
+        console.log('Adding book...');
     };
 
-    // once a shelf is selected during adding a book, we can open the editor
-    useEffect(() => {
-        if (!isPlacing || !isAdding) {
+    const handleOrderBook = (direction) => {
+        // shelf id is the index of the shelf in the b2s map where the book is placed
+        const shelfMap = book2ShelfMap.find(shelf => shelf.books.includes(selectedBookView.book_id));
+        const shelfIdx = book2ShelfMap.indexOf(shelfMap);
+        const bookIdx = shelfMap.books.indexOf(selectedBookView.book_id);
+        console.log('Ordering book, on shelf ', shelfIdx, ' at index ', bookIdx, direction == -1 ? " left" : " right");
+        if (direction === -1 && bookIdx === 0) {
+            console.log('Book is already at the leftmost position');
             return;
         }
-        setIsAdding(false);
-        setIsEditing(isPlacing);
-    }, [isPlacing]);
+        if (direction === 1 && bookIdx === shelfMap.books.length - 1) {
+            console.log('Book is already at the rightmost position');
+            return;
+        }
+        const newBook2ShelfMap = [...book2ShelfMap];
+        const newShelfMap = { ...shelfMap };
+        const newBooks = [...newShelfMap.books];
+        const temp = newBooks[bookIdx];
+        newBooks[bookIdx] = newBooks[bookIdx + direction];
+        newBooks[bookIdx + direction] = temp;
+        newShelfMap.books = newBooks;
+        newBook2ShelfMap[shelfIdx] = newShelfMap;
+        setBook2ShelfMap(newBook2ShelfMap);
+    }
+
+    // once a shelf is selected during adding a book, we can open the editor
+    // useEffect(() => {
+    //     if (!isPlacing || !isAdding) {
+    //         return;
+    //     }
+    //     setIsAdding(false);
+    //     setIsEditing(isPlacing);
+    // }, [isPlacing]);
 
 
     if (!layoutData) {
@@ -167,6 +204,8 @@ const Home = () => {
                             setSelectedBookView={setSelectedBookView}
                             isPlacing={isPlacing} setIsPlacing={setIsPlacing}
                             isEditing={isEditing} setIsEditing={setIsEditing}
+                            isOrdering={isOrdering} setIsOrdering={setIsOrdering}
+                            isAdding={isAdding} setIsAdding={setIsAdding}
                         />
                     ))}
                     <button
@@ -178,13 +217,23 @@ const Home = () => {
             </TransformWrapper>
             {( selectedBookView ) && <BookDetails
                 book_id={selectedBookView.book_id}
+                bookData={selectedBookView.bookData || null}
                 coverData={selectedBookView.coverData}
-                coverImageURL={selectedBookView.coverImageURL}
+                progressData={selectedBookView.progressData || null}
                 isEditing={isEditing} setIsEditing={setIsEditing}
                 isPlacing={isPlacing} setIsPlacing={setIsPlacing}
                 isOrdering={isOrdering} setIsOrdering={setIsOrdering}
+                isAdding={isAdding} setIsAdding={setIsAdding}
                 coverDimensions={selectedBookView.coverDimensions}
             />}
+            {isOrdering && <div style={{
+                position: 'fixed', bottom: '10px', left: '10px', zIndex: 10
+            }}>
+                <button onClick={() => setIsOrdering(false)}>Done Ordering</button>
+                <button onClick={() => handleOrderBook(-1)}>Order Left</button>
+                <button onClick={() => handleOrderBook(1)}>Order Right</button>
+            </div>
+            }
         </div>
     );
 };

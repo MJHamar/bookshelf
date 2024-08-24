@@ -298,7 +298,7 @@ pub async fn create_book() -> impl Responder {
     };
 
     // NOTE: We DO NOT COMMIT to the DB HERE
-    let view = BookView {
+    let view: BookView = BookView {
         book: book,
         cover: book_cover,
         progress: book_progress,

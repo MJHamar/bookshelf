@@ -8,9 +8,10 @@ const Book = ({
     initialCoverData,
     spineX,
     selectedBookView, setSelectedBookView,
-    isEditing, setIsEditing
+    isEditing, setIsEditing,
+    isOrdering
 }) => {
-    const [coverData, setCoverData] = useState(null);
+    const [coverData, setCoverData] = useState(selectedBookView?.coverData || initialCoverData);
     const [coverImage, setCoverImage] = useState(null);
     const [spineImage, setSpineImage] = useState(null);
     const [coverImageURL, setCoverImageURL] = useState(null);
@@ -102,6 +103,19 @@ const Book = ({
         }
     }, [selectedBookView]);
 
+    // "unclick" the book if ordering
+    useEffect(() => {
+        if (selectedBookView && coverData && selectedBookView.book_id === coverData.book_id) {
+            if (isOrdering) {
+                setIsClicked(false);
+                setRotation(0);
+            } else if (!isOrdering) {
+                setIsClicked(true);
+                setRotation(80);
+            }
+        }
+    }, [isOrdering]);
+
     useEffect(() => { // upload spine image to the server and get the file id
         console.log(`spineImage: ${spineImage}`);
         if (!spineImage) {
@@ -151,21 +165,21 @@ const Book = ({
 
 
     const handleMouseEnter = () => {
-        if (!isClicked) {
+        if (!isOrdering && !isClicked) {
             setRotation(45); // Peek-cover view
             setIsHovered(true);
         }
     };
 
     const handleMouseLeave = () => {
-        if (!isClicked) {
+        if (!isOrdering && !isClicked) {
             setRotation(0); // Back to spine view
             setIsHovered(false);
         }
     };
 
     const handleClick = () => {
-        if (isEditing) {
+        if (isEditing || isOrdering) {
             return;
         }
         if (isClicked) {
@@ -217,16 +231,17 @@ const Book = ({
                 left: bringToFront ? '10px' : spineX,
                 top: bringToFront ? '10px' : 0,
                 alignItems: 'left',
-                zIndex: 100,
+                zIndex: isHovered ? 1000000 : 100,
                 perspective: '1000px',
                 transformOrigin: "right",
                 transformStyle: 'preserve-3d',
                 // currentLeft + translateX = 10 ==> translateX = 10 - currentLeft
-                transform: `translate3d(${isEditing && selectedBookView.book_id == coverData.book_id ? coverData.spine_width : 0 }px,0px,0px) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
+                transform: `translate3d(${isEditing && selectedBookView.book_id == coverData.book_id ? coverData.spine_width : 0}px,
+                                        0px,
+                                        ${isHovered ? '150px' : '0px'}) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
                 transition: "all 500ms ease",
                 willChange: "auto",
                 overflow: 'visible',  // Allow content to overflow the bounds
-
             }}
         >
             <div
@@ -239,7 +254,7 @@ const Book = ({
                     height: '100%',
                     width: coverData.spine_width,
                     flexShrink: 1,
-                    zIndex: 110,
+
                     transformOrigin: "right",
                     transform: isEditing ? 'rotateY(80deg)' : `rotateY(0deg)`,
                     transition: "all 500ms ease",
@@ -257,7 +272,7 @@ const Book = ({
                         height: '100%',
                         width: coverData.spine_width,
                         opacity: 0,
-                        zIndex: 'inherit',
+                        
                     }}
                 />}
                 <img
@@ -280,7 +295,7 @@ const Book = ({
                     height: "100%",
                     width: coverData.cover_width,
                     flexShrink: 0,
-                    zIndex: 120,
+
                     transformOrigin: "left",
                     transform: `rotateY(90deg)`,
                     transition: "all 500ms ease",
@@ -299,7 +314,7 @@ const Book = ({
                         height: '100%',
                         width: coverData.cover_width,
                         opacity: 0,
-                        zIndex: 'inherit',
+                        
                     }}
                 />}
                 <img

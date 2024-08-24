@@ -9,7 +9,9 @@ const Shelf = ({
     b2sMap, setB2SMap,
     selectedBookView, setSelectedBookView,
     isPlacing, setIsPlacing,
-    isEditing, setIsEditing
+    isEditing, setIsEditing,
+    isOrdering, setIsOrdering,
+    isAdding, setIsAdding
 }) => {
 
     const [bookCovers, setBookCovers] = useState([]);
@@ -22,8 +24,12 @@ const Shelf = ({
         if (!b2sMap || !b2sMap[shelf.id]) {
             return;
         }
-        const bookIds = b2sMap[shelf.id].books;
-        getBookCover(bookIds, setBookCovers);
+        const bookIds = b2sMap[shelf.id].books.filter(b => b !== isAdding);
+        let coversInclAdding = [];
+        if (isAdding && b2sMap[shelf.id].books.includes(isAdding)) {
+            coversInclAdding = [selectedBookView.coverData];
+        }
+        getBookCover(bookIds, (covers) => { setBookCovers(covers.concat(coversInclAdding)) });
     }, [b2sMap]);
 
     // calculate the total width of the books on the shelf
@@ -32,6 +38,10 @@ const Shelf = ({
         if (!bookCovers) {
             return;
         }
+        console.log(`Book Covers for Shelf ${shelf.id}: `, bookCovers);
+        console.log(`B2SMap for Shelf ${shelf.id}: `, b2sMap[shelf.id]);
+        console.log(`Is Adding: ${isAdding}`);
+        console.log(`Is Placing: ${isPlacing}`);
         let totalWidth = 0;
         let cumSW = [];
         bookCovers.forEach(cover => {
@@ -51,7 +61,9 @@ const Shelf = ({
             let prevShelves = [...prev];
             let prevShelf = prevShelves.find(s => s.books.includes(isPlacing));
             let newShelf = prevShelves[shelf.id];
-            prevShelf.books = prevShelf.books.filter(b => b !== isPlacing);
+            if (prevShelf) {
+                prevShelf.books = prevShelf.books.filter(b => b !== isPlacing);
+            }
             newShelf.books.push(isPlacing);
             return prevShelves;
         });
@@ -71,18 +83,14 @@ const Shelf = ({
         }
     }
 
-    if (!bookCovers) {
-        return null;
-    }
-
     return (
         <div
             ref={shelfRef}
-            onClick={placingIsNewShelf ? handlePlaceClick : null}
+            onClick={isPlacing ? handlePlaceClick : null}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             style={{
-                cursor: placingIsNewShelf ? 'pointer' : 'default',
+                cursor: isPlacing ? 'pointer' : 'default',
                 position: 'absolute',
                 left: shelf.x_pos,
                 top: shelf.y_pos,
@@ -104,6 +112,7 @@ const Shelf = ({
                     setSelectedBookView={setSelectedBookView}
                     isEditing={isEditing}
                     setIsEditing={setIsEditing}
+                    isOrdering={isOrdering}
                 />
             })}
         </div>
