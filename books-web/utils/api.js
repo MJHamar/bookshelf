@@ -1,22 +1,21 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3140';
+import { api_url } from '@/config';
 
 export const DEF_COVER_ID = "77004530-4d29-4e00-940d-d2654b8e7f04"
 export const DEF_SPINE_ID = "a90e6325-edfa-4bcb-961f-a3d2abad79ef"
 
 export const getCurrentLayout = async (setLayout) => {
-    const response = await axios.get(`${API_BASE_URL}/books/current_layout`);
+    const response = await axios.get(`${api_url}/books/current_layout`);
     setLayout(response.data);
 };
 
 export const getShelves = async (layout_id, setShelves) => {
-    const response = await axios.get(`${API_BASE_URL}/books/shelves/${layout_id}`);
+    const response = await axios.get(`${api_url}/books/shelves/${layout_id}`);
     setShelves(response.data);
 };
 
 export const getB2SMapping = async (layout_id, setBook2ShelfMap) => {
-    const response = await axios.get(`${API_BASE_URL}/books/b2s/${layout_id}`);
+    const response = await axios.get(`${api_url}/books/b2s/${layout_id}`);
     let b2s_map = [];
     response.data.forEach(b2s => {
         b2s_map[b2s.shelf_id] = b2s;
@@ -29,7 +28,7 @@ export const getBook = async (book_ids, setBook) => {
     if (!Array.isArray(book_ids)) {
         book_ids = [book_ids];
     }
-    const response = await axios.post(`${API_BASE_URL}/books`, { book_ids: book_ids });
+    const response = await axios.post(`${api_url}/books`, { book_ids: book_ids });
     setBook(response.data[0]);
 };
 
@@ -38,7 +37,7 @@ export const getBookCover = async (book_ids, setCover) => {
     if (!Array.isArray(book_ids)) {
         book_ids = [book_ids];
     }
-    const response = await axios.post(`${API_BASE_URL}/books/covers`, { book_ids: book_ids });
+    const response = await axios.post(`${api_url}/books/covers`, { book_ids: book_ids });
     setCover(response.data);
 };
 
@@ -47,27 +46,27 @@ export const getBookProgress = async (book_ids, setProgress) => {
     if (!Array.isArray(book_ids)) {
         book_ids = [book_ids];
     }
-    const response = await axios.post(`${API_BASE_URL}/books/progress`, { book_ids: book_ids });
+    const response = await axios.post(`${api_url}/books/progress`, { book_ids: book_ids });
     setProgress(response.data[0]);
 }
 
 export const getBookProgressReads = async (book_id, setProgressReads) => {
-    const response = await axios.get(`${API_BASE_URL}/books/progress/reads/${book_id}`);
+    const response = await axios.get(`${api_url}/books/progress/reads/${book_id}`);
     setProgressReads(response.data);
 }
 
 export const getDecorationSlots = async (layout_id, setDecorationSlots) => {
-    const response = await axios.get(`${API_BASE_URL}/books/decoration_slots/${layout_id}`);
+    const response = await axios.get(`${api_url}/books/decoration_slots/${layout_id}`);
     setDecorationSlots(response.data);
 };
 
 export const getDecorations = async (decorationIds, setDecoration) => {
-    const response = await axios.post(`${API_BASE_URL}/books/decoration`, { dec_ids: decorationIds });
+    const response = await axios.post(`${api_url}/books/decoration`, { dec_ids: decorationIds });
     setDecoration(response.data);
 };
 
 export const createBook = async (setBookView) => {
-    const response = await axios.post(`${API_BASE_URL}/books/create`);
+    const response = await axios.post(`${api_url}/books/create`);
     const view = response.data;
     setBookView({
         book_id: view.book.id,
@@ -78,38 +77,38 @@ export const createBook = async (setBookView) => {
 }
 
 export const setBook = async (bookData) => {
-    const response = await axios.post(`${API_BASE_URL}/books/set`, bookData);
+    const response = await axios.post(`${api_url}/books/set`, bookData);
     return response.data;
 }
 
 export const setB2SMapping = async (layout_id, b2sData) => {
     console.log(`API:: setB2SMapping: ${JSON.stringify(b2sData)}`);
-    const response = await axios.post(`${API_BASE_URL}/books/b2s/${layout_id}`, b2sData);
+    const response = await axios.post(`${api_url}/books/b2s/${layout_id}`, b2sData);
     return response.data;
 }
 
 export const setBookCover = async (coverData) => {
-    const response = await axios.post(`${API_BASE_URL}/books/covers/set`, coverData);
+    const response = await axios.post(`${api_url}/books/covers/set`, coverData);
     return response.data;
 }
 
 export const setBookProgress = async (progressData) => {
-    const response = await axios.post(`${API_BASE_URL}/books/progress/set`, progressData);
+    const response = await axios.post(`${api_url}/books/progress/set`, progressData);
     return response.data;
 }
 
 export const checkBookProgressRead = async (book_id) => {
-    const response = await axios.post(`${API_BASE_URL}/books/progress/reads/${book_id}`);
+    const response = await axios.post(`${api_url}/books/progress/reads/${book_id}`);
     return response.data;
 }
 
 export const setDecorationSlot = async (slotData) => {
-    const response = await axios.post(`${API_BASE_URL}/books/decoration_slots/set`, slotData);
+    const response = await axios.post(`${api_url}/books/decoration_slots/set`, slotData);
     return response.data;
 }
 
 export const setDecoration = async (decorationData) => {
-    const response = await axios.post(`${API_BASE_URL}/books/decoration/set`, decorationData);
+    const response = await axios.post(`${api_url}/books/decoration/set`, decorationData);
     return response.data;
 }
 
