@@ -10,6 +10,7 @@ import {
 import Layout from '../components/Layout';
 import Shelf from '../components/Shelf';
 import BookDetails from "../components/BookDetails";
+import Decoration from '../components/Decoration';
 
 const Home = () => {
 
@@ -23,7 +24,6 @@ const Home = () => {
     const [shelves, setShelves] = useState([]);
     // decorations data which we get from the API
     const [decorationSlots, setDecorationSlots] = useState([]);
-    const [decorations, setDecorations] = useState([]);
     // 2D array of shelves and books
     // shelves are identified by consecutive integers
     // books are identified by their book_id and ordered by their index in the shelf
@@ -54,15 +54,6 @@ const Home = () => {
         getDecorationSlots(layoutData.id, setDecorationSlots);
         getB2SMapping(layoutData.id, setBook2ShelfMap);
     }, [layoutData]);
-
-    // fetch decorations once the decoration slots are available
-    useEffect(() => {
-        if (!decorationSlots) {
-            return;
-        }
-        const decorationIds = decorationSlots.map(slot => slot.slot_id);
-        getDecorations(decorationIds, setDecorations);
-    }, [decorationSlots]);
 
     // when the b2s map is updated, reflect this in the database
     useEffect(() => {
@@ -208,11 +199,17 @@ const Home = () => {
                             isAdding={isAdding} setIsAdding={setIsAdding}
                         />
                     ))}
-                    <button
-                        onClick={handleAddBook}
-                        style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
-                        Add Book
-                    </button>
+                    {decorationSlots && decorationSlots.map(slot => (
+                        <div key={slot.id} style={{
+                            position: 'absolute',
+                            left: slot.x_pos,
+                            top: slot.y_pos,
+                            width: slot.width,
+                            height: slot.height
+                        }}>
+                            <Decoration slotData={slot} />
+                        </div>
+                    ))}
                 </TransformComponent>
             </TransformWrapper>
             {( selectedBookView ) && <BookDetails
@@ -226,6 +223,11 @@ const Home = () => {
                 isAdding={isAdding} setIsAdding={setIsAdding}
                 coverDimensions={selectedBookView.coverDimensions}
             />}
+            <button
+                onClick={handleAddBook}
+                style={{ position: 'fixed', bottom: '10px', right: '10px' }}>
+                Add Book
+            </button>
             {isOrdering && <div style={{
                 position: 'fixed', bottom: '10px', left: '10px', zIndex: 10
             }}>
