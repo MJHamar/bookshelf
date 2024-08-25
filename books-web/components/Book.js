@@ -5,6 +5,8 @@ import { set } from "date-fns";
 
 
 const Book = ({
+    compCoverWidth,
+    compSpineWidth,
     initialCoverData,
     spineX,
     selectedBookView, setSelectedBookView,
@@ -22,13 +24,18 @@ const Book = ({
 
     const spineRef = useRef(null); // Reference to the spine div
     const coverRef = useRef(null); // Reference to the cover div
-    const [spineWidth, setSpineWidth] = useState(0); // State to store the width of the spine
+    const [spineWidth, setSpineWidth] = useState(compSpineWidth); // State to store the width of the spine
 
 
+    // reset cover data when the book is unselected
     useEffect(() => {
+        if (!initialCoverData) {
+            return;
+        }
         setCoverData(initialCoverData);
-    }, []);
+    }, [initialCoverData]);
 
+    // download cover and spine images
     useEffect(() => {
         if (coverData?.cover_fname) {
             downloadFile({
@@ -231,12 +238,12 @@ const Book = ({
                 left: bringToFront ? '10px' : spineX,
                 top: bringToFront ? '10px' : 0,
                 alignItems: 'left',
-                zIndex: isHovered ? 1000000 : 100,
-                perspective: '1000px',
+                zIndex: isHovered ? 110 : 100,
+                perspective: '10000px',
                 transformOrigin: "right",
                 transformStyle: 'preserve-3d',
                 // currentLeft + translateX = 10 ==> translateX = 10 - currentLeft
-                transform: `translate3d(${isEditing && selectedBookView.book_id == coverData.book_id ? coverData.spine_width : 0}px,
+                transform: `translate3d(${isEditing && selectedBookView.book_id == coverData.book_id ? compSpineWidth : 0}px,
                                         0px,
                                         ${isHovered ? '150px' : '0px'}) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
                 transition: "all 500ms ease",
@@ -252,7 +259,7 @@ const Book = ({
                     left: 0,
                     justifyContent: "center",
                     height: '100%',
-                    width: coverData.spine_width,
+                    width: 'auto',
                     flexShrink: 1,
 
                     transformOrigin: "right",
@@ -270,7 +277,7 @@ const Book = ({
                         top: 0,
                         left: 0,
                         height: '100%',
-                        width: coverData.spine_width,
+                        width: 'auto',
                         opacity: 0,
                         
                     }}
@@ -280,7 +287,7 @@ const Book = ({
                     alt={`spine`}
                     style={{
                         height: '100%',
-                        width: coverData.spine_width,
+                        width: 'auto',
                         objectFit: 'cover',
                     }}
                 />
@@ -293,9 +300,8 @@ const Book = ({
                     left: spineWidth,
                     justifyContent: "center",
                     height: "100%",
-                    width: coverData.cover_width,
+                    width: 'auto',
                     flexShrink: 0,
-
                     transformOrigin: "left",
                     transform: `rotateY(90deg)`,
                     transition: "all 500ms ease",
@@ -312,7 +318,7 @@ const Book = ({
                         top: 0,
                         left: 0,
                         height: '100%',
-                        width: coverData.cover_width,
+                        width: 'auto',
                         opacity: 0,
                         
                     }}
@@ -322,7 +328,7 @@ const Book = ({
                     alt={`cover`}
                     style={{
                         height: '100%',
-                        width: coverData.cover_width,
+                        width: 'auto',
                         objectFit: 'cover',
                     }}
                 />

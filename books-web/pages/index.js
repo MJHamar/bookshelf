@@ -175,13 +175,16 @@ const Home = () => {
     }
 
     return (
-        <div style={{
-            position: 'absolute', width: layoutData.width, height: layoutData.height,
-            zIndex: 1, top: 0, left: 0
-        }}>
+        <div style={{ width: '100%', height: '100%', overflow: 'hidden', backgroundColor: 'darkgrey' }}>
             <TransformWrapper
-                style={{ height: "100%", width: "100%", zIndex: 1 }}
-                ref={wrapperRef} 
+                initialScaleScale={window.innerHeight / layoutData.height}
+                minScale={window.innerHeight / layoutData.height}
+                maxScale={4}    // Maximum zoom-in level
+                // centerContent   // Centers the image in the view
+                centerOnInit
+                limitToBounds={false} // Keeps content within the bounds
+                wheel={{ step: 0.1 }} // Adjusts the zoom speed for mouse wheel
+                ref={wrapperRef}
             >
                 <TransformComponent>
                     <Layout layoutData={layoutData} />
@@ -202,6 +205,7 @@ const Home = () => {
                     {decorationSlots && decorationSlots.map(slot => (
                         <div key={slot.id} style={{
                             position: 'absolute',
+                            zIndex: 100,
                             left: slot.x_pos,
                             top: slot.y_pos,
                             width: slot.width,
@@ -222,7 +226,7 @@ const Home = () => {
                 isOrdering={isOrdering} setIsOrdering={setIsOrdering}
                 isAdding={isAdding} setIsAdding={setIsAdding}
                 coverDimensions={selectedBookView.coverDimensions}
-            />}
+                />}
             <button
                 onClick={handleAddBook}
                 style={{ position: 'fixed', bottom: '10px', right: '10px' }}>

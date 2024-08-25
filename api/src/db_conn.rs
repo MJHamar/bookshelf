@@ -42,10 +42,12 @@ impl Default for DefaultResponse {
 pub struct Layout {
     pub id: String,
     pub layout_fname: String,
+    pub texture_fname: Option<String>,
     pub width: Number,
     pub height: Number,
-    // TODO: add schelf and decoration slot numbers
+    // TODO: add shelf and decoration slot numbers
 }
+
 
 #[derive(Serialize, Deserialize)]
 pub struct Shelf {
@@ -114,7 +116,7 @@ pub struct BookView {
 pub struct DecorationSlot {
     pub id: Number,
     pub layout_id: String,
-    pub decoration_id: Number,
+    pub decoration_id: String,
     pub x_pos: Number,
     pub y_pos: Number,
     pub height: Number,

@@ -10,11 +10,12 @@ const Decoration = ({ slotData }) => {
 
     useEffect(() => {
         if (slotData) {
-            getDecorations([slotData.decoration_id], setDecorationData);
+            getDecorations([slotData.decoration_id], (data) => setDecorationData(data[0]));
         }
     }, [slotData]);
 
     useEffect(() => {
+        console.log("decorationData", decorationData);
         if (decorationData) {
             downloadFile({
                 uuid: decorationData.decoration_fname,
@@ -24,8 +25,8 @@ const Decoration = ({ slotData }) => {
     }, [decorationData]);
 
     return (
-        <div>
-            {decorationURL && <img src={decorationURL} alt={`decoration-${decorationData.id}`} />}
+        <div style={{width:'100%', height:'100%'}}>
+            {decorationURL && <img style={{ width: '100%', height: '100%' }} src={decorationURL} alt={`decoration-${decorationData.id}`} />}
         </div>
     );
 

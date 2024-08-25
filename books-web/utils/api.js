@@ -134,6 +134,7 @@ export const uploadFile = async (
 export const downloadFile = async (
     { uuid, setFileData }
 ) => {
+    console.log(`downloading file: ${uuid}`);
     const res = await fetch(`http://localhost:3140/data/${uuid}`, {
         method: 'GET',
     });

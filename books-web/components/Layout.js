@@ -4,13 +4,20 @@ import { downloadFile, uploadFile } from "../utils/api";
 const Layout = ({ layoutData }) => {
     const [layoutURL, setLayoutURL] = useState(null);
     const [layoutSVG, setLayoutSVG] = useState(null);
-    
+    const [layoutTextureURL, setLayoutTextureURL] = useState(null);
+
     useEffect(() => {
         if (layoutData) {
             downloadFile({
                 uuid: layoutData.layout_fname,
                 setFileData: setLayoutURL
             });
+            if (layoutData.texture_fname) {
+                downloadFile({
+                    uuid: layoutData.texture_fname,
+                    setFileData: setLayoutTextureURL
+                });
+            }
         }
     }, [layoutData]);
 
@@ -32,8 +39,9 @@ const Layout = ({ layoutData }) => {
     }, [layoutURL]);
 
     return (
-        <div>
-            {layoutSVG && <div dangerouslySetInnerHTML={{ __html: layoutSVG }} />}
+        <div style={{ top:0, left:0, width: layoutData.width, height: layoutData.height}}>
+            {layoutTextureURL && <img style={{ position: 'absolute', zIndex: '1', top: 0, left: 0, width: layoutData.width, height: layoutData.height }} src={layoutTextureURL} alt={`texture-${layoutData.id}`} />}
+            {layoutSVG && <div style={{ position: 'absolute', zIndex: '10', top: 0, left: 0, width: layoutData.width, height: layoutData.height }} dangerouslySetInnerHTML={{ __html: layoutSVG }} />}
         </div>
     );
 };

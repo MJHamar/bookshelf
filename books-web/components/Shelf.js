@@ -16,6 +16,8 @@ const Shelf = ({
 
     const [bookCovers, setBookCovers] = useState([]);
     const [cumulativeSpineWidth, setCumulativeSpineWidth] = useState([]);
+    const [compCoverWidth, setCompCoverWidth] = useState([]);
+    const [compSpineWidth, setCompSpineWidth] = useState([]);
 
     const shelfRef = useRef(null);
 
@@ -38,17 +40,26 @@ const Shelf = ({
         if (!bookCovers) {
             return;
         }
-        console.log(`Book Covers for Shelf ${shelf.id}: `, bookCovers);
-        console.log(`B2SMap for Shelf ${shelf.id}: `, b2sMap[shelf.id]);
-        console.log(`Is Adding: ${isAdding}`);
-        console.log(`Is Placing: ${isPlacing}`);
+        let cSpineWidth = [];
+        let cCoverWidth = [];
         let totalWidth = 0;
         let cumSW = [];
         bookCovers.forEach(cover => {
-            totalWidth += cover.spine_width;
+            // books adjust their height to the shelf height
+            let scalingFactor = shelf.height / cover.book_height;
+            let spineWidth = cover.spine_width * scalingFactor;
+            let coverWidth = cover.book_width * scalingFactor;
+            cSpineWidth.push(spineWidth);
+            cCoverWidth.push(coverWidth);
+            totalWidth += spineWidth;
             cumSW.push(totalWidth);
         });
+        console.log("cumSW", cumSW);
+        console.log("cCoverWidth", cCoverWidth);
+        console.log("cSpineWidth", cSpineWidth);
         setCumulativeSpineWidth(cumSW);
+        setCompCoverWidth(cCoverWidth);
+        setCompSpineWidth(cSpineWidth);
     }, [bookCovers]);
 
     let placingIsNewShelf = isPlacing && !b2sMap[shelf.id].books.includes(isPlacing);
@@ -106,6 +117,8 @@ const Shelf = ({
             {(!isPlacing && bookCovers && cumulativeSpineWidth) && bookCovers.map((cover, idx, _) => {
                 return <Book
                     key={cover.book_id}
+                    compCoverWidth={compCoverWidth[idx]}
+                    compSpineWidth={compSpineWidth[idx]}
                     initialCoverData={cover}
                     spineX={cumulativeSpineWidth[idx - 1] || 0}
                     selectedBookView={selectedBookView}
