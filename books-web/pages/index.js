@@ -15,11 +15,9 @@ import Decoration from '../components/Decoration';
 const Home = () => {
 
     // reference to the wrapper div
-    const wrapperRef = useRef(null);
+    const bookshelfRef = useRef(null);
     // layout data which we get from the API
     const [layoutData, setLayoutData] = useState(null);
-    // layout URL which we generate from the layout data
-    const [layoutURL, setLayoutURL] = useState(null);
     // shelves data which we get from the API
     const [shelves, setShelves] = useState([]);
     // decorations data which we get from the API
@@ -121,7 +119,7 @@ const Home = () => {
         const panY = selectedComponentRect.top - (viewportHeight - fixedElementSize.height) / 2;
         const panZoom = pageHeight / selectedComponentRect.height;
 
-        wrapperRef.current.setTransform(panX, panY, panZoom); // Adjust the zoom level as needed
+        bookshelfRef.current.setTransform(panX, panY, panZoom); // Adjust the zoom level as needed
     };
 
     const handleAddBook = async () => {
@@ -174,58 +172,82 @@ const Home = () => {
         );
     }
 
+    console.log('index:: selectedBookView:', selectedBookView);
+
+
     return (
-        <div style={{ width: '100%', height: '100%', overflow: 'hidden', backgroundColor: 'darkgrey' }}>
-            <TransformWrapper
-                initialScaleScale={window.innerHeight / layoutData.height}
-                minScale={window.innerHeight / layoutData.height}
-                maxScale={4}    // Maximum zoom-in level
-                // centerContent   // Centers the image in the view
-                centerOnInit
-                limitToBounds={false} // Keeps content within the bounds
-                wheel={{ step: 0.1 }} // Adjusts the zoom speed for mouse wheel
-                ref={wrapperRef}
-            >
-                <TransformComponent>
-                    <Layout layoutData={layoutData} />
-                    {(shelves && book2ShelfMap) && shelves.map(shelf => (
-                        <Shelf
-                            key={shelf.id}
-                            shelf={shelf}
-                            b2sMap={book2ShelfMap}
-                            setB2SMap={setBook2ShelfMap}
-                            selectedBookView={selectedBookView}
-                            setSelectedBookView={setSelectedBookView}
-                            isPlacing={isPlacing} setIsPlacing={setIsPlacing}
-                            isEditing={isEditing} setIsEditing={setIsEditing}
-                            isOrdering={isOrdering} setIsOrdering={setIsOrdering}
-                            isAdding={isAdding} setIsAdding={setIsAdding}
-                        />
-                    ))}
-                    {decorationSlots && decorationSlots.map(slot => (
-                        <div key={slot.id} style={{
-                            position: 'absolute',
-                            zIndex: 100,
-                            left: slot.x_pos,
-                            top: slot.y_pos,
-                            width: slot.width,
-                            height: slot.height
-                        }}>
-                            <Decoration slotData={slot} />
-                        </div>
-                    ))}
-                </TransformComponent>
-            </TransformWrapper>
-            {( selectedBookView ) && <BookDetails
+        <div
+            ref={bookshelfRef}
+            style={{
+            // display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100vw', // Full viewport width
+            height: '100vh', // Full viewport height
+            overflow: 'hidden',
+            backgroundColor: 'darkgrey',
+            position: 'relative',
+            top: 0,
+            left: 0,
+            zIndex: 1
+        }}>
+            <div style={{
+                width: layoutData.width,
+                height: layoutData.height,
+                transform: `scale(${window.innerWidth / layoutData.width})`,
+                transformOrigin: 'top left',
+                zIndex: 10
+            }}>
+                {/* <TransformWrapper
+                    minScale={window.innerWidth / layoutData.width}
+                    centerZoomedOut={true}
+                    initialScale={window.innerWidth / layoutData.width}
+                    centerOnInit={false}
+                    limitToBounds={true}
+                >
+                    <TransformComponent
+                    > */}
+                    {/* </TransformComponent>
+                </TransformWrapper> */}
+                <Layout layoutData={layoutData} />
+                {decorationSlots && decorationSlots.map(slot => (
+                    <div key={slot.id} style={{
+                        position: 'absolute',
+                        zIndex: 10,
+                        left: slot.x_pos,
+                        top: slot.y_pos,
+                        width: slot.width,
+                        height: slot.height
+                    }}>
+                        <Decoration slotData={slot} />
+                    </div>
+                ))}
+                {(shelves && book2ShelfMap) && shelves.map(shelf => (
+                    <Shelf
+                    key={shelf.id}
+                    shelf={shelf}
+                    b2sMap={book2ShelfMap}
+                    setB2SMap={setBook2ShelfMap}
+                    selectedBookView={selectedBookView}
+                    setSelectedBookView={setSelectedBookView}
+                    isPlacing={isPlacing} setIsPlacing={setIsPlacing}
+                    isEditing={isEditing} setIsEditing={setIsEditing}
+                    isOrdering={isOrdering} setIsOrdering={setIsOrdering}
+                    isAdding={isAdding} setIsAdding={setIsAdding}
+                    bookshelfRef={bookshelfRef}
+                    />
+                ))}
+            </div>
+            {(selectedBookView ) && <BookDetails
                 book_id={selectedBookView.book_id}
                 bookData={selectedBookView.bookData || null}
                 coverData={selectedBookView.coverData}
                 progressData={selectedBookView.progressData || null}
+                bookRef={selectedBookView.bookRef} bookshelfRef={bookshelfRef}
                 isEditing={isEditing} setIsEditing={setIsEditing}
                 isPlacing={isPlacing} setIsPlacing={setIsPlacing}
                 isOrdering={isOrdering} setIsOrdering={setIsOrdering}
                 isAdding={isAdding} setIsAdding={setIsAdding}
-                coverDimensions={selectedBookView.coverDimensions}
                 />}
             <button
                 onClick={handleAddBook}

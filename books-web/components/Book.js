@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { DEF_COVER_ID, DEF_SPINE_ID } from "../utils/api";
 import { downloadFile, uploadFile } from "../utils/api";
+
 import { set } from "date-fns";
 
 
@@ -11,7 +12,8 @@ const Book = ({
     spineX,
     selectedBookView, setSelectedBookView,
     isEditing, setIsEditing,
-    isOrdering
+    isOrdering,
+    bookshelfRef
 }) => {
     const [coverData, setCoverData] = useState(selectedBookView?.coverData || initialCoverData);
     const [coverImage, setCoverImage] = useState(null);
@@ -24,6 +26,8 @@ const Book = ({
 
     const spineRef = useRef(null); // Reference to the spine div
     const coverRef = useRef(null); // Reference to the cover div
+    const containerRef = useRef(null); // Reference to the container div
+
     const [spineWidth, setSpineWidth] = useState(compSpineWidth); // State to store the width of the spine
 
 
@@ -81,23 +85,20 @@ const Book = ({
 
     // fill selected book view if clicked
     useEffect(() => {
-        if (!isClicked || !spineRef.current || !coverRef.current) {
+        if (!isClicked && !isEditing) {
             return;
         }
-        let coverDimensions = {
-            top: spineRef.current.offsetTop,
-            left: spineRef.current.offsetLeft,
-            width: spineRef.current.offsetWidth + coverRef.current.offsetWidth,
-            height: coverRef.current.offsetHeight
-        };
         setSelectedBookView({
             book_id: coverData.book_id,
             coverData: coverData,
             coverImageURL: coverImageURL,
             spineImageURL: spineImageURL,
-            coverDimensions: coverDimensions
+            bookRef: containerRef,
         });
-    }, [isClicked, spineRef, coverRef, isEditing]);
+
+        // bookshelfRef.current.zoomToElement(containerRef.current, 0.1);
+    }, [isClicked, isEditing]);
+
 
     // "click" the book if selected
     useEffect(() => {
@@ -191,6 +192,7 @@ const Book = ({
         }
         if (isClicked) {
             isHovered ? setRotation(45) : setRotation(0); // Back to spine view
+
             setIsEditing(false);
             setSelectedBookView(null);
             setIsClicked(false);
@@ -224,116 +226,135 @@ const Book = ({
         return null;
     }
 
-    const bringToFront = isClicked
+    const bringToFront = isClicked || selectedBookView?.book_id === coverData.book_id;
 
     return (
-        <div /** Book with all rotations */
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onClick={handleClick}
-            cursor='pointer'
-            style={{
-                position: bringToFront ? 'fixed' : 'absolute',
-                height: bringToFront ? '50%' : '100%',
-                left: bringToFront ? '10px' : spineX,
-                top: bringToFront ? '10px' : 0,
-                alignItems: 'left',
-                zIndex: isHovered ? 110 : 100,
-                perspective: '10000px',
-                transformOrigin: "right",
-                transformStyle: 'preserve-3d',
-                // currentLeft + translateX = 10 ==> translateX = 10 - currentLeft
-                transform: `translate3d(${isEditing && selectedBookView.book_id == coverData.book_id ? compSpineWidth : 0}px,
-                                        0px,
-                                        ${isHovered ? '150px' : '0px'}) rotateY(-${rotation}deg) rotateZ(0deg) skew(0deg, 0deg)`,
-                transition: "all 500ms ease",
-                willChange: "auto",
-                overflow: 'visible',  // Allow content to overflow the bounds
-            }}
-        >
-            <div
-                ref={spineRef}
+        <>
+            {/* <div ref={bboxRef}
                 style={{
-                    position: "absolute",
-                    alignItems: "flex-start",
-                    left: 0,
-                    justifyContent: "center",
+                    position: 'absolute',
+                    height: '500px',
+                    width: 2700,
+                    left: spineX-compCoverWidth-50,
+                    top: -150,
+                    zIndex: 100,
+                    outline: 'red solid 5px',
+                    backgroundColor: 'red',
+                    opacity: 0.5,
+                }}
+                >
+            </div> */}
+            <div /** Book with all rotations */
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleClick}
+                ref={containerRef}
+                style={{
+                    position: 'absolute',
                     height: '100%',
                     width: 'auto',
-                    flexShrink: 1,
-
+                    left: spineX,
+                    top: 0,
+                    alignItems: 'left',
+                    zIndex: 100,
+                    perspective: '100000px',
                     transformOrigin: "right",
-                    transform: isEditing ? 'rotateY(80deg)' : `rotateY(0deg)`,
+                    transformStyle: 'preserve-3d',
+                    // currentLeft + translateX = 10 ==> translateX = 10 - currentLeft
+                    transform: `translate3d(${isClicked ? -compCoverWidth : 0}px,
+                                            0px,
+                                            ${bringToFront ? '150px' : '0px'}) rotateY(-${rotation}deg)
+                                            rotateZ(0deg)
+                                            scale(1)
+                                            skew(0deg, 0deg)`,
                     transition: "all 500ms ease",
-                    transformStyle: "preserve-3d",
-                    willChange: "auto"
-                }}>
-                {isEditing && <input
-                    type='file'
-                    onChange={handleSpineImageUpload}
+                    willChange: "yes",
+                    overflow: 'visible',  // Allow content to overflow the bounds
+                    cursor: 'pointer'
+                }}
+            >
+                <div
+                    ref={spineRef}
                     style={{
-                        cursor: 'pointer',
-                        position: 'absolute',
-                        top: 0,
+                        position: "absolute",
+                        alignItems: "flex-start",
                         left: 0,
+                        justifyContent: "center",
                         height: '100%',
                         width: 'auto',
-                        opacity: 0,
-                        
-                    }}
-                />}
-                <img
-                    src={spineImageURL}
-                    alt={`spine`}
-                    style={{
-                        height: '100%',
-                        width: 'auto',
-                        objectFit: 'cover',
-                    }}
-                />
-            </div>
-            <div
-                ref={coverRef}
-                style={{
-                    position: "absolute",
-                    alignItems: "flex-start",
-                    left: spineWidth,
-                    justifyContent: "center",
-                    height: "100%",
-                    width: 'auto',
-                    flexShrink: 0,
-                    transformOrigin: "left",
-                    transform: `rotateY(90deg)`,
-                    transition: "all 500ms ease",
-                    transformStyle: "preserve-3d",
-                    willChange: "auto",
-                    objectFit: 'cover',
-                }}>
-                {isEditing && <input
-                    type='file'
-                    onChange={handleCoverImageUpload}
+                        flexShrink: 1,
+                        transformOrigin: "right",
+                        transform: isEditing ? 'rotateY(80deg)' : `rotateY(0deg)`,
+                        transition: "all 500ms ease",
+                        transformStyle: "preserve-3d",
+                        willChange: "auto"
+                    }}>
+                    {isEditing && <input
+                        type='file'
+                        onChange={handleSpineImageUpload}
                         style={{
-                        cursor: 'pointer',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        height: '100%',
-                        width: 'auto',
-                        opacity: 0,
-                        
-                    }}
-                />}
-                <img
-                    src={coverImageURL}
-                    alt={`cover`}
+                            cursor: 'pointer',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            height: '100%',
+                            width: 'auto',
+                            opacity: 0,
+                            
+                        }}
+                    />}
+                    <img
+                        src={spineImageURL}
+                        alt={`spine`}
+                        style={{
+                            height: '100%',
+                            width: 'auto',
+                            objectFit: 'cover',
+                        }}
+                    />
+                </div>
+                <div
+                    ref={coverRef}
                     style={{
-                        height: '100%',
+                        position: "absolute",
+                        alignItems: "flex-start",
+                        left: spineWidth,
+                        justifyContent: "center",
+                        height: "100%",
                         width: 'auto',
+                        flexShrink: 0,
+                        transformOrigin: "left",
+                        transform: `rotateY(90deg)`,
+                        transition: "all 500ms ease",
+                        transformStyle: "preserve-3d",
+                        willChange: "auto",
                         objectFit: 'cover',
-                    }}
-                />
+                    }}>
+                    {isEditing && <input
+                        type='file'
+                        onChange={handleCoverImageUpload}
+                            style={{
+                            cursor: 'pointer',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            height: '100%',
+                            width: 'auto',
+                            opacity: 0,
+                        }}
+                    />}
+                    <img
+                        src={coverImageURL}
+                        alt={`cover`}
+                        style={{
+                            height: '100%',
+                            width: 'auto',
+                            objectFit: 'cover',
+                        }}
+                    />
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

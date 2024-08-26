@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { downloadFile } from '../utils/api';
-import { format, set } from 'date-fns';
+import { format, max, set } from 'date-fns';
 import {
     getBook, getBookProgress,
     getBookProgressReads, checkBookProgressRead,
@@ -15,6 +15,7 @@ const BookDetails = ({
     bookData,
     progressData,
     coverData,
+    bookRef, bookshelfRef,
     isEditing, setIsEditing,
     isPlacing, setIsPlacing,
     isOrdering, setIsOrdering,
@@ -41,6 +42,9 @@ const BookDetails = ({
     const [finishedUpdate, setFinishedUpdate] = useState(null);
     const [lastReadUpdate, setLastReadUpdate] = useState(false);
 
+    // where to place the book details
+    const [containerPosition, setContainerPosition] = useState({ top: 0, left: 0, width: '300', height: '400' });
+
     // when coverData is available, load book and progress data
     useEffect(() => {
         if (coverData?.book_id && !book && !bookProgress) {
@@ -49,6 +53,7 @@ const BookDetails = ({
             if (!bookProgressReads) getBookProgressReads(coverData.book_id, setBookProgressReads);
         }
     }, [coverData]);
+
 
     // when coverData changes, see if fnames need to be updated
     useEffect(() => {
@@ -67,6 +72,80 @@ const BookDetails = ({
             setLastReadUpdate(true);
         }
     }, [startedUpdate]);
+
+    useEffect(() => {
+        if (!bookRef?.current || !bookshelfRef?.current) {
+            return;
+        }
+        const bookRect = bookRef.current.getBoundingClientRect();
+        const bookshelfRect = bookshelfRef.current.getBoundingClientRect();
+        const relBookRect = {
+            top: bookRect.top - bookshelfRect.top,
+            left: bookRect.left - bookshelfRect.left,
+            height: bookRect.height,
+            width: bookRect.height
+        };
+        console.log(`bookRect: ${JSON.stringify(relBookRect)}`);
+        console.log(`bookshelfRect: ${JSON.stringify(bookshelfRect)}`);
+        const maxContainerWidth = 300;
+        const maxContainerHeight = 300;
+
+        const isWindowNarrow = window.innerWidth < 800;
+        // if wondow is small, place the container above or below, where it fits
+        if (isWindowNarrow) {
+            const preferBelow = bookRect.top > bookshelfRect.height / 2;
+            const offsetFromBook = bookshelfRect.height * 0.02;
+            if (preferBelow) {
+                console.log('placing below');
+                const containerTop = relBookRect.top + relBookRect.height + offsetFromBook;
+                const containerHeight = Math.min(maxContainerHeight, bookshelfRect.height - containerTop);
+                setContainerPosition({
+                    top: containerTop,
+                    left: relBookRect.left - relBookRect.width / 2,
+                    width: relBookRect.width,
+                    height: containerHeight
+                });
+            } else {
+                console.log('placing above');
+                const containerHeight = Math.min(maxContainerHeight, relBookRect.top);
+                setContainerPosition({
+                    top: relBookRect.top - containerHeight - offsetFromBook,
+                    left: relBookRect.left - relBookRect.width / 2,
+                    width: relBookRect.width,
+                    height: containerHeight
+                });
+            }
+        } else {
+            // if window is wide, place the container to the right of the book
+            const preferRight = bookRect.left < bookshelfRect.width / 2;
+            const offsetFromBook = bookshelfRect.width * 0.02;
+            if (preferRight) {
+                console.log('placing right');
+                const containerLeft = relBookRect.left + offsetFromBook; // NOTE: on the right this is not needed: + relBookRect.width;
+                const containerWidth = Math.min(maxContainerWidth, bookshelfRect.width - containerLeft);
+                const containerTop = relBookRect.top - relBookRect.height / 2;
+                const containerHeight = Math.min(maxContainerHeight, bookshelfRect.height - containerTop - offsetFromBook);
+                setContainerPosition({
+                    top: containerTop,
+                    left: containerLeft,
+                    width: containerWidth,
+                    height: containerHeight,
+                });
+            } else {
+                console.log('placing left');
+                const containerWidth = Math.min(maxContainerWidth, relBookRect.left); // NOTE: on the left we substract width
+                const containerLeft = relBookRect.left - containerWidth - offsetFromBook - relBookRect.width;
+                const containerTop = relBookRect.top - relBookRect.height / 2;
+                const containerHeight = Math.min(maxContainerHeight, bookshelfRect.height - containerTop - offsetFromBook);
+                setContainerPosition({
+                    top: containerTop,
+                    left: containerLeft,
+                    width: containerWidth,
+                    height: containerHeight
+                });
+            }
+        }
+    }, [bookRef, bookshelfRef]);
 
     const handleProgressChange = async (status) => {
         let now = new Date();
@@ -162,24 +241,16 @@ const BookDetails = ({
         setIsEditing(true);
     }
 
-    if (!book || !bookProgress) {
+    if (!book || !bookProgress || !bookRef) {
         return null;
     }
-
-    const containerStyle = {
-        top: '10px',
-        left: '30vw',
-        width: '70vw',
-        height: '80vh',
-
-    };
 
     // Edit Book
     if (isEditing && !isPlacing && !isOrdering) {
 
         return (
             <div className={styles.bookDetailsContainer}
-                style={containerStyle}
+                style={containerPosition}
             >
                 <div className={styles.bookDetails}>
                     <h2>Edit Book</h2>
@@ -239,7 +310,7 @@ const BookDetails = ({
         }
         return ( // Book Details
             <div className={styles.bookDetailsContainer}
-                style={containerStyle}
+                style={containerPosition}
             >
                 <div className={styles.bookDetails}>
                     <h2>{book?.title}</h2>
@@ -308,6 +379,7 @@ const BookDetails = ({
                     </button>
                 </div>
             </div>
+
         );
     }
 };

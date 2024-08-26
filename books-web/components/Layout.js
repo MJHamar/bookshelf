@@ -39,9 +39,9 @@ const Layout = ({ layoutData }) => {
     }, [layoutURL]);
 
     return (
-        <div style={{ top:0, left:0, width: layoutData.width, height: layoutData.height}}>
-            {layoutTextureURL && <img style={{ position: 'absolute', zIndex: '1', top: 0, left: 0, width: layoutData.width, height: layoutData.height }} src={layoutTextureURL} alt={`texture-${layoutData.id}`} />}
-            {layoutSVG && <div style={{ position: 'absolute', zIndex: '10', top: 0, left: 0, width: layoutData.width, height: layoutData.height }} dangerouslySetInnerHTML={{ __html: layoutSVG }} />}
+        <div style={{ top:0, left:0, width: '100%', height: '100%'}}>
+            {layoutTextureURL && <img style={{ position: 'absolute', zIndex: '1', top: 0, left: 0, width: '100%', height: '100%' }} src={layoutTextureURL} alt={`texture-${layoutData.id}`} />}
+            {layoutSVG && <div style={{ position: 'absolute', zIndex: '10', top: 0, left: 0, width: '100%', height: '100%' }} dangerouslySetInnerHTML={{ __html: layoutSVG }} />}
         </div>
     );
 };

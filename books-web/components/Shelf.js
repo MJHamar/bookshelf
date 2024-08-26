@@ -11,7 +11,8 @@ const Shelf = ({
     isPlacing, setIsPlacing,
     isEditing, setIsEditing,
     isOrdering, setIsOrdering,
-    isAdding, setIsAdding
+    isAdding, setIsAdding,
+    bookshelfRef
 }) => {
 
     const [bookCovers, setBookCovers] = useState([]);
@@ -51,12 +52,9 @@ const Shelf = ({
             let coverWidth = cover.book_width * scalingFactor;
             cSpineWidth.push(spineWidth);
             cCoverWidth.push(coverWidth);
-            totalWidth += spineWidth;
+            totalWidth += spineWidth + 0.1*spineWidth;
             cumSW.push(totalWidth);
         });
-        console.log("cumSW", cumSW);
-        console.log("cCoverWidth", cCoverWidth);
-        console.log("cSpineWidth", cSpineWidth);
         setCumulativeSpineWidth(cumSW);
         setCompCoverWidth(cCoverWidth);
         setCompSpineWidth(cSpineWidth);
@@ -110,7 +108,7 @@ const Shelf = ({
                 display: 'flex',
                 alignItems: 'flex-end',
                 overflow: 'visible',
-                zIndex: 10,
+                zIndex: 20,
                 backgroundColor: (placingIsNewShelf) ? 'yellow' : null
             }}
         >
@@ -126,6 +124,7 @@ const Shelf = ({
                     isEditing={isEditing}
                     setIsEditing={setIsEditing}
                     isOrdering={isOrdering}
+                    bookshelfRef={bookshelfRef}
                 />
             })}
         </div>
